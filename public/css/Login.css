@@ -1,0 +1,130 @@
+/* ===== Paleta ===== */
+:root{
+  --azul:#014BA0;     /* Azul Jardín */
+  --madera:#783714;   /* Café Madera */
+  --amarillo:#F7D547;
+  --rojo:#FF3936;
+  --verde:#008311;    /* Verde Solvencia */
+  --blanco:#FFFFFF;
+  --grisC:#E0E0E0;
+  --gris:#333333;
+
+  --cardR:26px;
+  --plateR:22px;
+  --shadowLg:0 22px 48px rgba(0,0,0,.12);
+  --shadowPlate:0 12px 28px rgba(0,0,0,.22);
+  --focus:0 0 0 3px rgba(1,75,160,.16);
+  --fieldH:56px;      /* altura única para ambos campos */
+}
+
+/* ===== Lienzo / Tarjeta ===== */
+.lgx-page{min-height:100vh;background:#f4f7fb;display:grid;place-items:center;padding:28px}
+.lgx-card{width:100%;max-width:860px;background:var(--blanco);border-radius:var(--cardR);overflow:hidden;box-shadow:var(--shadowLg);border:1px solid rgba(0,0,0,.03)}
+
+/* ===== Header ===== */
+.lgx-header{position:relative;background:linear-gradient(135deg,var(--azul) 0%,#0c5eb3 55%,var(--verde) 120%);color:#fff;text-align:center;padding:52px 24px 36px}
+.lgx-grid{position:absolute;inset:0;opacity:.16;background-image:
+  linear-gradient(to right, rgba(255,255,255,.18) 1px, transparent 1px),
+  linear-gradient(to bottom, rgba(255,255,255,.18) 1px, transparent 1px);
+background-size:28px 28px;pointer-events:none}
+
+.lgx-logoBox{position:relative;display:flex;align-items:center;justify-content:center;height:176px;margin:-12px auto 8px}
+.lgx-logoRing{position:absolute;width:184px;height:184px;border-radius:50%;border:4px solid rgba(255,255,255,.28);background:radial-gradient(ellipse at center,rgba(255,255,255,.18),rgba(255,255,255,.06))}
+.lgx-logoPlate{position:relative;z-index:1;width:144px;height:144px;border-radius:var(--plateR);background:#fff;display:grid;place-items:center;border:3px }
+.lgx-logoPlate img{width:100%;height:100%;object-fit:contain;border-radius:14px}
+
+.lgx-brand{margin:12px 0 2px;font-size:30px;font-weight:900;letter-spacing:.2px}
+.lgx-subbrand{font-size:16px;font-weight:700;opacity:.95}
+
+/* ===== Body ===== */
+.lgx-body{padding:30px 36px 24px}
+.lgx-welcome{text-align:center;margin:4px 0 18px}
+.lgx-welcome h2{font-size:28px;color:var(--gris);margin:0 0 6px;font-weight:900}
+.lgx-welcome p{color:#5f6b7a;font-size:16px}
+
+.lgx-form{width:100%;max-width:600px;margin:0 auto}
+.lgx-field{margin-bottom:18px}
+.lgx-label{display:block;font-weight:800;color:var(--gris);margin:0 0 6px;font-size:15px}
+
+/* Para que ambos tengan la misma altura */
+.lgx-input {
+  width: 100%;
+  height: 56px; /* altura fija igual para todos */
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: var(--gris);
+  background: var(--blanco);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; /* importante para que padding no afecte altura */
+}
+
+.lgx-input:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(1, 75, 160, 0.1);
+}
+
+/* Contenedor para el ojo */
+.lgx-inputWrap {
+  position: relative;
+  height: 56px; /* igual que el campo usuario */
+  display: flex;
+  align-items: center;
+}
+
+.lgx-inputWrap input {
+  padding-right: 44px; /* deja espacio para el icono */
+}
+
+.lgx-eye {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 18px;
+}
+/* mensajes */
+.lgx-msg{margin:8px 0 12px;padding:10px 12px;border-radius:12px;font-size:14px}
+.lgx-msg--err{background:#fef2f2;border:1px solid #fecaca;color:var(--rojo)}
+.lgx-msg--ok{background:#f0fdf4;border:1px solid #bbf7d0;color:var(--verde)}
+
+/* botón */
+.lgx-btn{width:100%;height:var(--fieldH);border:none;border-radius:12px;background:#0d4d9b;color:#fff;font-weight:800;font-size:16px;letter-spacing:.2px;box-shadow:0 12px 24px rgba(1,75,160,.28);transition:transform .12s,box-shadow .12s,filter .12s}
+.lgx-btn:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.lgx-btn:active{transform:translateY(0)}
+.lgx-btn:disabled{background:#9ca3af;box-shadow:none;cursor:not-allowed}
+
+/* spinner */
+.lgx-spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.lgx-div{border:none;height:1px;background:var(--grisC);margin:18px 0 12px}
+.lgx-help{text-align:center}
+
+.lgx-linkBtn{background:none;border:none;padding:0;color:var(--azul);cursor:pointer;font-size:14px;font-weight:800}
+.lgx-linkBtn:hover{color:#013d87;text-decoration:underline}
+
+/* ===== Footer ===== */
+.lgx-footer{background:#fafbfc;border-top:1px solid #eef1f5;text-align:center;padding:18px 24px 22px;border-bottom-left-radius:var(--cardR);border-bottom-right-radius:var(--cardR)}
+.lgx-footer p{color:#697581;font-size:14px;margin-bottom:8px}
+.lgx-links{display:flex;gap:16px;justify-content:center}
+.lgx-links .lgx-linkBtn{color:#7a8696;font-weight:700;font-size:12px}
+.lgx-links .lgx-linkBtn:hover{color:var(--azul)}
+
+/* ===== Responsive ===== */
+@media (max-width:560px){
+  .lgx-page{padding:16px}
+  .lgx-card{border-radius:20px}
+  .lgx-header{padding:40px 16px 28px}
+  .lgx-logoBox{height:160px}
+  .lgx-logoRing{width:168px;height:168px}
+  .lgx-logoPlate{width:128px;height:128px}
+  .lgx-brand{font-size:24px}
+  .lgx-body{padding:22px 16px 18px}
+  .lgx-input{height:52px}
+  .lgx-btn{height:52px}
+}
