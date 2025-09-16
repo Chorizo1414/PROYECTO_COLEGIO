@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./ParentRegister.css";
+import "./css/ParentRegister.css";
 
 export default function ParentRegister() {
   const [form, setForm] = useState({

@@ -1,7 +1,7 @@
 // src/StudentRegister.js
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import "./StudentRegister.css";
+import "./css/StudentRegister.css";
 
 export default function StudentRegister() {
   const navigate = useNavigate();

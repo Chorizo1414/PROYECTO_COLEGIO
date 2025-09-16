@@ -1,6 +1,6 @@
 // src/SecretaryPayments.js
 import React, { useMemo, useState } from "react";
-import "./SecretaryPayments.css";
+import "./css/SecretaryPayments.css";
 import logoColegio from "./assets/logo-colegio.png";
 
 /** Datos de ejemplo (luego los reemplazas por tu API) */

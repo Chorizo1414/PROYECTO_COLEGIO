@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./auth";                   // usamos tu auth existente (named export)
 import logoColegio from "./assets/logo-colegio.png"; // ✅ logo dentro de src/assets
-import "./Login.css";
+import "./css/Login.css";
 
 export default function Login() {
   const navigate = useNavigate();

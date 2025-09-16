@@ -1,8 +1,8 @@
 // src/TeacherDashboard.js
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./TeacherDashboard.css";
-import logoColegio from "./assets/logo-colegio.png";
+import "./css/TeacherDashboard.css";
+import logoColegio from "./public/imagenes/logo-colegio.png";
 
 const SUBJECTS = ["Lenguaje", "Computación", "Sociales"];
 const GRADES = ["4to Bach", "5to Bach", "4to A", "5to A", "1° Primaria", "2° Primaria"];

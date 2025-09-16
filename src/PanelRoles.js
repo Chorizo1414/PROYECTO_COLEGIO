@@ -1,7 +1,7 @@
 // src/PanelRoles.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./PanelRoles.css";
+import "./css/PanelRoles.css";
 import logoColegio from "./assets/logo-colegio.png";
 
 const ROLES = [
