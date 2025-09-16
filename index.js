@@ -9,6 +9,9 @@ const app = express();
 app.use(cors()); // Permite peticiones de otros orígenes (tu frontend)
 app.use(express.json()); // Permite al servidor entender JSON
 
+// Definir rutas
+app.use('/api/auth', require('./routes/authRoutes'));
+
 // Ruta de prueba para verificar que el servidor funciona
 app.get('/api/test', (req, res) => {
   res.status(200).send('¡El backend está conectado y funcionando!');
