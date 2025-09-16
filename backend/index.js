@@ -11,6 +11,8 @@ app.use(express.json()); // Permite al servidor entender JSON
 
 // Definir rutas
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/parents', require('./routes/parentRoutes'));
 
 // Ruta de prueba para verificar que el servidor funciona
 app.get('/api/test', (req, res) => {
