@@ -28,7 +28,23 @@ const getAllStudents = async (req, res) => {
   }
 };
 
+// --- Vincular un Padre a un Estudiante ---
+const linkParentToStudent = async (req, res) => {
+  const { cui_estudiante, cui_padre } = req.body;
+  try {
+    await pool.query(
+      "INSERT INTO alumno_responsable (cui_estudiante, cui_padre, principal) VALUES ($1, $2, TRUE)",
+      [cui_estudiante, cui_padre]
+    );
+    res.status(201).json({ msg: 'Padre vinculado correctamente al estudiante.' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error en el servidor al vincular.');
+  }
+};
+
 module.exports = {
   createStudent,
-  getAllStudents
+  getAllStudents,
+  linkParentToStudent
 };

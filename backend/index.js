@@ -13,6 +13,8 @@ app.use(express.json()); // Permite al servidor entender JSON
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/parents', require('./routes/parentRoutes'));
+app.use('/api/teachers', require('./routes/teacherRoutes'));
+app.use('/api/grades', require('./routes/gradesRoutes'))
 
 // Ruta de prueba para verificar que el servidor funciona
 app.get('/api/test', (req, res) => {

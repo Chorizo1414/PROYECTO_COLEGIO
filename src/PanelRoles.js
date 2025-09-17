@@ -1,63 +1,67 @@
-// src/PanelRoles.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "./auth";
 import "./css/PanelRoles.css";
 import logoColegio from "./assets/logo-colegio.png";
 
-const ROLES = [
+// Lista completa de TODOS los paneles que existen
+const TODOS_LOS_PANELES = [
   { key: "coordinador", title: "COORDINADOR", emoji: "👩‍💼", tone: "t-amarillo" },
   { key: "registro_docentes", title: "REGISTRO DOCENTES", emoji: "👩‍🏫", tone: "t-verde" },
   { key: "maestros", title: "MAESTROS", emoji: "👨‍🏫", tone: "t-azul" },
-  { key: "secretaria", title: "SECRETARÍA", emoji: "📋", tone: "t-lila" },
-  { key: "registro_alumnos", title: "REGISTRO ALUMNOS", emoji: "📚", tone: "t-madera" },
+  { key: "secretaria", title: "SECRETARÍA \n solvencia/insolvencia", emoji: "📋", tone: "t-lila" },
+  { key: "registro_alumnos", title: "REGISTRO ALUMNOS/PADRES", emoji: "📚", tone: "t-madera" },
+  { key: "registro_padres", title: "REGISTRO PADRES", emoji: "👨‍👩‍👧", tone: "t-amarillo" } 
 ];
+
+// Mapeo de permisos por rol_id de la base de datos
+const ROLES_POR_PERFIL = {
+  // Secretaría: Solo ve su panel, registro de alumnos y registro de padres
+  1: ["secretaria", "registro_alumnos"],
+  
+  // Coordinador: Ve todo
+  2: ["coordinador", "registro_docentes", "maestros", "secretaria", "registro_alumnos", "registro_padres"],
+  
+  // Docente: Solo ve su panel
+  3: ["maestros"],
+};
 
 export default function PanelRoles() {
   const navigate = useNavigate();
   const [toast, setToast] = useState({ show: false, text: "" });
 
-  const roleName = (k) =>
-    ({
+  const panelesVisibles = useMemo(() => {
+    const userRole = auth.getRole();
+    const permisos = ROLES_POR_PERFIL[userRole] || [];
+    return TODOS_LOS_PANELES.filter(panel => permisos.includes(panel.key));
+  }, []);
+
+  const selectRole = (key) => {
+    const roleNameMap = {
       coordinador: "Coordinador",
       registro_docentes: "Registro de docentes",
       maestros: "Portal Docente",
       secretaria: "Módulo de Secretaría",
-      registro_alumnos: "Registro de alumnos",
-    }[k]);
+      registro_alumnos: "Registro de alumnos/padres"
+    };
+    const friendlyName = roleNameMap[key] || key;
 
-  const selectRole = (key) => {
-    // Registro de docentes -> módulo Docentes /registro
-    if (key === "registro_docentes") {
-      setToast({ show: true, text: `Abriendo ${roleName(key)}…` });
-      setTimeout(() => setToast({ show: false, text: "" }), 1200);
-      setTimeout(() => navigate("/docentes/registro", { replace: true }), 700);
-      return;
-    }
-
-    // Registro de alumnos -> pantalla de registro de alumnos
-    if (key === "registro_alumnos") {
-      setToast({ show: true, text: `Abriendo ${roleName(key)}…` });
-      setTimeout(() => setToast({ show: false, text: "" }), 1200);
-      setTimeout(() => navigate("/student-register", { replace: true }), 700);
-      return;
-    }
-
-    // Maestros -> dashboard de docentes
-    if (key === "maestros") {
-      setToast({ show: true, text: `Accediendo a ${roleName(key)}…` });
-      setTimeout(() => setToast({ show: false, text: "" }), 1200);
-      setTimeout(() => navigate("/teacher", { replace: true }), 700);
-      return;
-    }
-
-    // Resto de roles: navegar a subruta del panel con la key
-    setToast({ show: true, text: `Accediendo a ${roleName(key) || key}…` });
+    setToast({ show: true, text: `Accediendo a ${friendlyName}…` });
     setTimeout(() => setToast({ show: false, text: "" }), 1200);
-    setTimeout(() => navigate(`/panel/${key}`, { replace: true }), 700);
-  };
 
+    let path = `/panel/${key}`;
+    if (key === 'registro_docentes') path = '/docentes/registro';
+    if (key === 'registro_alumnos') path = '/student-register';
+    if (key === 'registro_padres') path = '/parent-register';
+    if (key === 'maestros') path = '/teacher';
+    if (key === 'secretaria') path = '/panel/secretaria';
+
+    setTimeout(() => navigate(path, { replace: true }), 700);
+  };
+  
   const logout = () => {
     if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+      auth.logout();
       navigate("/login", { replace: true });
     }
   };
@@ -73,7 +77,7 @@ export default function PanelRoles() {
         c.style.transform = "translateY(0)";
       }, 90 * i);
     });
-  }, []);
+  }, [panelesVisibles]);
 
   return (
     <div className="pr-page">
@@ -86,9 +90,8 @@ export default function PanelRoles() {
           <p className="pr-system">Sistema de Gestión Académica</p>
         </header>
 
-        {/* Grid 3x2 en desktop (5 items => 3 arriba, 2 abajo) */}
         <section className="pr-gridRoles pr-grid-3-2">
-          {ROLES.map((r) => (
+          {panelesVisibles.map((r) => (
             <button
               key={r.key}
               type="button"

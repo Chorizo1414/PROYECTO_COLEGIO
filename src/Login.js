@@ -1,56 +1,46 @@
-// src/Login.js
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Importamos axios
+import axios from 'axios';
+import { auth } from './auth'; // 1. Importa nuestro manejador de auth
 import logoColegio from './assets/logo-colegio.png';
 import './css/Login.css';
 
 function Login() {
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+    username: 'secretaria', // Valor por defecto para pruebas
+    password: 'password123', // Valor por defecto para pruebas
   });
-  const [error, setError] = useState(''); // Estado para manejar errores
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const { username, password } = formData;
 
-  // Esta función actualiza el estado cada vez que escribes en un input
   const onChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Esta función se ejecuta cuando envías el formulario
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Limpia errores previos
+    setError('');
 
     try {
-      // La URL completa de tu API de login en el backend
       const url = 'http://localhost:4000/api/auth/login';
-
       const body = { username, password };
-
-      // Hacemos la petición POST al backend
       const res = await axios.post(url, body);
 
-      // Si el login es exitoso, el backend nos devuelve un token
-      const { token } = res.data;
+      // 2. Usamos auth.login() para guardar el token
+      auth.login(res.data.token);
 
-      // Guardamos el token en el almacenamiento local del navegador
-      localStorage.setItem('token', token);
-
-      // Redirigimos al usuario al panel de roles
+      // Redirigimos al panel
       navigate('/panel');
 
     } catch (err) {
-      // Si hay un error (ej. credenciales incorrectas), lo mostramos
       const errorMessage = err.response?.data?.msg || 'Error al iniciar sesión';
       setError(errorMessage);
       console.error('Error de login:', err.response || err);
     }
   };
 
+  // ... El resto de tu componente JSX se queda igual ...
   return (
     <div className="login-container">
       <div className="login-box">
@@ -79,7 +69,6 @@ function Login() {
               required
             />
           </div>
-          {/* Mostramos el mensaje de error si existe */}
           {error && <p className="error-message">{error}</p>}
           <button type="submit" className="login-button">Ingresar</button>
         </form>
