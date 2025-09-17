@@ -1,3 +1,4 @@
+require('dotenv').config();
 // Importar las dependencias
 const express = require('express');
 const cors = require('cors');
