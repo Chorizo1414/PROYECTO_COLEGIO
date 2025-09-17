@@ -40,7 +40,7 @@ const login = async (req, res) => {
 
     jwt.sign(
       payload,
-      'tu_secreto_jwt', // ¡Cambia esto por una clave secreta más segura en tu .env!
+      process.env.JWT_SECRET,
       { expiresIn: '1h' }, // El token expira en 1 hora
       (err, token) => {
         if (err) throw err;

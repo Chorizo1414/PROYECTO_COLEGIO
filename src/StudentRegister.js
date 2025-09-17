@@ -49,7 +49,7 @@ export default function StudentRegister() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (!token) {
       alert("Sesión no válida.");
       return navigate('/login');
@@ -63,7 +63,6 @@ export default function StudentRegister() {
     fecha_nacimiento: form.fechaNac,
     genero_id: form.genero === 'F' ? 1 : 2, // Temporalmente, luego lo harás dinámico
     id_grado: form.id_grado,  // Temporalmente, luego lo harás dinámico
-    id_seccion: 1, // Temporalmente
     usuario_agrego: "secretaria"
   };
 

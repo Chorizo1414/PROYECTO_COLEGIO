@@ -2,12 +2,15 @@ const pool = require('../config/db'); // Importamos la conexión a la BD
 
 // --- Crear un nuevo estudiante ---
 const createStudent = async (req, res) => {
-  // Obtenemos los datos del cuerpo de la petición (que enviará React)
-  const { cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego } = req.body;
+  // Obtenemos los datos del cuerpo de la petición
+  const { cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, usuario_agrego } = req.body;
+  // La sección es opcional: si no viene, será null.
+  const id_seccion = req.body.id_seccion || null;
 
   try {
     const newStudent = await pool.query(
       "INSERT INTO estudiantes (cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego, estado_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1) RETURNING *",
+      // Pasamos la variable id_seccion que puede ser null
       [cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego]
     );
     res.status(201).json(newStudent.rows[0]);

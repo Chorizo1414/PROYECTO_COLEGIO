@@ -19,7 +19,7 @@ export default function ParentRegister() {
     e.preventDefault();
     
     // 1. Obtener el token que guardaste en el login
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
 
     // Verificación por si no hay token
     if (!token) {
