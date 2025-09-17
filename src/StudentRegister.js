@@ -13,25 +13,34 @@ export default function StudentRegister() {
     genero: "",
     cuiEst: "",
     cuiPadre: "",
-    id_grado: "", // 2. Añade id_grado al estado del formulario
+    id_grado: "",
   });
-  const [grados, setGrados] = useState([]); // 3. Nuevo estado para la lista de grados
+  const [grados, setGrados] = useState([]);
+  const [loading, setLoading] = useState(true); // 1. Nuevo estado de carga
 
-  // 4. useEffect para cargar los grados desde la API
   useEffect(() => {
-    const fetchGrades = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:4000/api/grades', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setGrados(res.data);
-      } catch (error) {
-        console.error("Error al cargar los grados", error);
+  const fetchGrades = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:4000/api/grades', {
+        // si la ruta queda pública, puedes borrar headers
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      setGrados(res.data);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        alert('Tu sesión expiró. Iniciá sesión de nuevo.');
+        navigate('/login');
+      } else {
+        alert('No pude cargar los grados. Revisa la consola.');
       }
-    };
-    fetchGrades();
-  }, []); // El array vacío asegura que solo se ejecute una vez
+      console.error('Error al cargar los grados', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchGrades();
+}, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -60,10 +69,10 @@ export default function StudentRegister() {
 
   try {
       // Guardar al estudiante
-      const studentRes = await axios.post('http://localhost:4000/api/students', studentData, {
+      await axios.post('http://localhost:4000/api/students', studentData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       // Vincular al padre
       const linkData = {
         cui_estudiante: form.cuiEst,
@@ -83,6 +92,10 @@ export default function StudentRegister() {
     }
   };
 
+  if (loading) {
+    return <div className="reg-container"><div>Cargando información...</div></div>;
+  }
+  
   return (
     <div className="reg-container">
       <div className="reg-card">
@@ -97,7 +110,10 @@ export default function StudentRegister() {
           <label className="reg-label" htmlFor="apellidos">Apellidos del Estudiante</label>
           <input id="apellidos" name="apellidos" className="reg-input" value={form.apellidos} onChange={onChange} required />
 
-          {/* 5. AÑADE ESTE NUEVO CAMPO PARA EL GRADO */}
+          <label className="reg-label" htmlFor="fechaNac">Fecha de Nacimiento</label>
+          <input id="fechaNac" name="fechaNac" type="date" className="reg-input" value={form.fechaNac} onChange={onChange} required />
+
+          {/* CAMPO DE GRADO EN EL ORDEN CORRECTO */}
           <label className="reg-label" htmlFor="id_grado">Grado a Cursar</label>
           <select
             id="id_grado"
@@ -114,9 +130,6 @@ export default function StudentRegister() {
               </option>
             ))}
           </select>
-
-          <label className="reg-label" htmlFor="fechaNac">Fecha de Nacimiento</label>
-          <input id="fechaNac" name="fechaNac" type="date" className="reg-input" value={form.fechaNac} onChange={onChange} required />
 
           <fieldset className="reg-fieldset">
             <legend className="reg-legend">Género</legend>

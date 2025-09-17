@@ -1,23 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = function(req, res, next) {
-  // Obtener token del encabezado
-  const token = req.header('Authorization');
+module.exports = function authMiddleware(req, res, next) {
+  // Acepta ambos estilos: Authorization: Bearer <token> o x-auth-token
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  let token = null;
 
-  // Verificar si no hay token
-  if (!token) {
-    return res.status(401).json({ msg: 'No hay token, permiso no válido' });
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else if (req.headers['x-auth-token']) {
+    token = req.headers['x-auth-token'];
+  } else if (req.query?.token) {
+    token = req.query.token; // útil para pruebas
   }
 
-  // El token usualmente viene como "Bearer <token>", lo limpiamos
-  const actualToken = token.split(' ')[1];
+  if (!token) return res.status(401).json({ msg: 'No hay token, autorización denegada' });
 
-  // Verificar el token
   try {
-    const decoded = jwt.verify(actualToken, 'tu_secreto_jwt'); // Usa la misma clave secreta
-    req.user = decoded.user;
-    next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    return next();
   } catch (err) {
-    res.status(401).json({ msg: 'Token no es válido' });
+    return res.status(401).json({ msg: 'Token no es válido' });
   }
 };

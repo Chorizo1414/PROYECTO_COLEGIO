@@ -1,17 +1,19 @@
+// backend/controllers/gradeController.js
 const pool = require('../config/db');
 
-// --- Obtener todos los Grados ---
 const getAllGrades = async (req, res) => {
   try {
-    // Obtenemos solo los grados activos, ordenados por su ID
-    const result = await pool.query("SELECT id_grado, nombre_grado FROM grados WHERE estado_id = 1 ORDER BY id_grado");
-    res.json(result.rows);
+    const sql = `
+      SELECT g.id_grado, g.nombre_grado
+      FROM mat_jardin.grados g
+      ORDER BY g.id_grado;
+    `;
+    const { rows } = await pool.query(sql);
+    return res.json(rows);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error en el servidor');
+    console.error('Error listando grados:', err);
+    return res.status(500).send('Error en el servidor');
   }
 };
 
-module.exports = {
-  getAllGrades,
-};
+module.exports = { getAllGrades };
