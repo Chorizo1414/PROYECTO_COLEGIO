@@ -41,7 +41,7 @@ export default function CoordinatorDashboard() {
         { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignarles padres.', icon: '📚', path: '/alumnos' },
         { key: 'ver_secretaria', title: 'Panel de Secretaría', desc: 'Supervisar el estado de pagos.', icon: '📋', path: '/panel/secretaria' },
         { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver el control de tareas de los maestros.', icon: '👨‍🏫', path: '/teacher' },
-        { key: 'asignar_cursos', title: 'Asignar Cursos', desc: 'Asignar materias a los docentes.', icon: '✏️', path: '#' },
+        { key: 'asignar_cursos', title: 'Asignar Cursos', desc: 'Asignar materias y grados a los docentes.', icon: '✏️', path: '/asignar-cursos' },
         { key: 'reportes', title: 'Reportes Generales', desc: 'Ver estadísticas y reportes consolidados.', icon: '📊', path: '#' },
     ];
     

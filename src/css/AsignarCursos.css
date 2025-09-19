@@ -1,0 +1,56 @@
+.ac-page { background: #f1f5f9; min-height: 100vh; padding: 24px; font-family: sans-serif; }
+.ac-container { max-width: 1200px; margin: 0 auto; }
+.ac-header {
+  background: linear-gradient(135deg, #014BA0 0%, #783714 100%);
+  color: white; padding: 28px; border-radius: 24px; text-align: center;
+  margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.1);
+}
+.ac-header h1 { margin: 0; font-size: 24px; }
+.ac-header p { margin: 4px 0 0; opacity: 0.9; }
+.ac-btn-volver {
+    background: white; border: 1px solid #e2e8f0; color: #334155;
+    padding: 10px 16px; border-radius: 12px; font-weight: 700;
+    cursor: pointer; margin-bottom: 24px; display: inline-block;
+}
+.ac-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+}
+.ac-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.05);
+  border: 1px solid #e2e8f0;
+}
+.ac-card h2 { margin-top: 0; font-size: 18px; color: #1e293b; }
+.ac-form { display: grid; gap: 12px; }
+.ac-form select, .ac-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.ac-btn {
+  border: none; border-radius: 12px; padding: 12px 24px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.ac-btn--primary { background: #014BA0; color: white; }
+.ac-list { max-height: 400px; overflow-y: auto; display: grid; gap: 8px; }
+.ac-list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #f8fafc; padding: 10px; border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.ac-docente { color: #1e293b; font-weight: 700; display: block; }
+.ac-detalle { color: #64748b; font-size: 13px; }
+.ac-delete-btn {
+  background: #fee2e2; color: #b91c1c; border: none;
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+}
+@media (max-width: 900px) {
+  .ac-grid { grid-template-columns: 1fr; }
+  .ac-list { max-height: none; }
+}

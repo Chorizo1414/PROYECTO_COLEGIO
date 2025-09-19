@@ -15,7 +15,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/parents', require('./routes/parentRoutes'));
 app.use('/api/teachers', require('./routes/teacherRoutes'));
-app.use('/api/grades', require('./routes/gradesRoutes'))
+app.use('/api/grades', require('./routes/gradesRoutes'));
+app.use('/api/asignaciones', require('./routes/asignacionRoutes'));
 
 // Ruta de prueba para verificar que el servidor funciona
 app.get('/api/test', (req, res) => {

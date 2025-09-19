@@ -8,7 +8,8 @@ import SecretaryPayments from "./SecretaryPayments";
 import TeacherDashboard from "./TeacherDashboard";
 import Docentes from "./Docentes";
 import CoordinatorDashboard from "./CoordinatorDashboard";
-import Alumnos from "./Alumnos"; // <-- 1. IMPORTAR
+import Alumnos from "./Alumnos";
+import AsignarCursos from "./AsignarCursos";
 
 export default function App() {
   return (
@@ -21,7 +22,8 @@ export default function App() {
         
         {/* --- MÓDULOS --- */}
         <Route path="/docentes/*" element={<ProtectedRoute><Docentes/></ProtectedRoute>} />
-        <Route path="/alumnos/*" element={<ProtectedRoute><Alumnos/></ProtectedRoute>} /> {/* <-- 2. AÑADIR RUTA DEL MÓDULO */}
+        <Route path="/alumnos/*" element={<ProtectedRoute><Alumnos/></ProtectedRoute>} /> 
+        <Route path="/asignar-cursos" element={<ProtectedRoute><AsignarCursos/></ProtectedRoute>} /> 
 
         {/* --- RUTAS INDIVIDUALES --- */}
         <Route path="/parent-register" element={<ProtectedRoute><ParentRegister/></ProtectedRoute>} />
