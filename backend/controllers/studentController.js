@@ -7,10 +7,17 @@ const getAllStudentsForCoordinator = async (req, res) => {
       SELECT
         e.cui_estudiante,
         e.nombres || ' ' || e.apellidos AS nombre_completo,
+        e.nombres,      -- <-- AÑADIR ESTA LÍNEA
+        e.apellidos,    -- <-- AÑADIR ESTA LÍNEA
+        e.fecha_nacimiento, -- <-- AÑADIR PARA FUTURAS ACTUALIZACIONES
+        e.genero_id,        -- <-- AÑADIR PARA FUTURAS ACTUALIZACIONES
         g.nombre_grado,
         s.nombre_seccion,
         p.nombre_completo AS nombre_padre,
-        e.estado_id
+        ar.cui_padre,       -- <-- AÑADIR PARA FUTURAS ACTUALIZACIONES
+        e.estado_id,
+        e.id_grado,
+        e.id_seccion
       FROM estudiantes e
       LEFT JOIN grados g ON e.id_grado = g.id_grado
       LEFT JOIN secciones s ON e.id_seccion = s.id_seccion

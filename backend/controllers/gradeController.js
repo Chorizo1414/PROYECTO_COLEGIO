@@ -31,7 +31,21 @@ const getSectionsByGrade = async (req, res) => {
   }
 };
 
+const getAllSections = async (req, res) => {
+  try {
+    // Esta consulta trae todas las secciones y a qué grado pertenecen
+    const { rows } = await pool.query(
+      'SELECT id_seccion, nombre_seccion, id_grado FROM secciones ORDER BY id_grado, nombre_seccion'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error listando todas las secciones:', err);
+    res.status(500).send('Error en el servidor');
+  }
+};
+
 module.exports = { 
   getAllGrades,
-  getSectionsByGrade
+  getSectionsByGrade,
+  getAllSections
  };
