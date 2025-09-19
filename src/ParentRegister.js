@@ -46,13 +46,11 @@ export default function ParentRegister() {
 
     // 4. Enviar la petición al backend
     try {
-      const response = await axios.post('http://localhost:4000/api/parents', parentData, config);
-      
+      await axios.post('http://localhost:4000/api/parents', parentData, config);
       alert('¡Padre/Encargado guardado con éxito!');
-      console.log('Datos guardados:', response.data);
       
       // Regresa al formulario de estudiante para continuar el flujo
-      navigate('/student-register'); 
+      navigate('/alumnos'); 
 
     } catch (error) {
       const errorMessage = error.response?.data?.msg || error.message;

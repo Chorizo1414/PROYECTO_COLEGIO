@@ -1,12 +1,11 @@
-// backend/routes/authRoutes.js
-
 const express = require('express');
 const router = express.Router();
-const { login } = require('../controllers/authController');
 
-// @ruta    POST api/auth/login
-// @desc    Autenticar usuario y obtener token
-// @acceso  Público
-router.post('/login', login);
+// --- CORRECCIÓN CLAVE AQUÍ ---
+// Usamos desestructuración { loginUser } para importar la función específica.
+const { loginUser } = require('../controllers/authController');
+
+// La ruta ahora recibe una función válida y el servidor no se detendrá.
+router.post('/login', loginUser);
 
 module.exports = router;

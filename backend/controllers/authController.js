@@ -2,50 +2,50 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const login = async (req, res) => {
+const loginUser = async (req, res) => {
   const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ msg: 'Por favor ingrese usuario y contraseña' });
-  }
-
   try {
+    // La consulta ahora también pide el rol_id y el cui_docente
     const userQuery = await pool.query(
-      'SELECT id_usuario, username, password, rol_id, cui_docente FROM usuarios WHERE username = $1',
+      'SELECT id_usuario, username, password, rol_id, cui_docente FROM usuarios WHERE username = $1 AND estado_id = 1', 
       [username]
     );
 
     if (userQuery.rows.length === 0) {
-      return res.status(400).json({ msg: 'Credenciales inválidas' });
+      return res.status(401).json({ msg: 'Usuario no encontrado o inactivo.' });
     }
 
     const user = userQuery.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
 
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Credenciales inválidas' });
+      return res.status(401).json({ msg: 'Contraseña incorrecta.' });
     }
 
-    // CORRECCIÓN CLAVE: Se añade `username` al payload del token.
-    // Esto hace que req.user.username esté disponible en las rutas protegidas.
     const payload = {
       user: {
         id: user.id_usuario,
+        username: user.username,
         role: user.rol_id,
-        username: user.username, // <-- ESTA LÍNEA ES LA SOLUCIÓN
-        cui_docente: user.cui_docente,
-      },
+        cui_docente: user.cui_docente 
+      }
     };
 
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
-      { expiresIn: '8h' },
+      { expiresIn: '5h' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token });
+        // --- ESTA ES LA CORRECCIÓN CLAVE ---
+        // Ahora la respuesta incluye el 'accessToken' y el objeto 'user'
+        res.json({
+          accessToken: token,
+          user: payload.user // Enviamos el mismo objeto que usamos para firmar el token
+        });
       }
     );
+
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Error del servidor');
@@ -53,6 +53,5 @@ const login = async (req, res) => {
 };
 
 module.exports = {
-  login,
+  loginUser
 };
-

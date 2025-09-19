@@ -1,80 +1,91 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { auth } from './auth'; // 1. Importa nuestro manejador de auth
-import logoColegio from './assets/logo-colegio.png';
-import './css/Login.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { auth } from "./auth";
+import logo from './assets/logo-colegio.png'; // Asegúrate de tener el logo en esta ruta
+import "./css/Login.css"; // Usaremos el CSS existente
 
-function Login() {
-  const [formData, setFormData] = useState({
-    username: 'secretaria', // Valor por defecto para pruebas
-    password: 'password123', // Valor por defecto para pruebas
-  });
-  const [error, setError] = useState('');
+export default function Login() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { username, password } = formData;
-
-  const onChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const onSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
+    setError("");
 
     try {
-      const url = 'http://localhost:4000/api/auth/login';
-      const body = { username, password };
-      const res = await axios.post(url, body);
+      const response = await axios.post("http://localhost:4000/api/auth/login", {
+        username,
+        password,
+      });
 
-      // 2. Usamos auth.login() para guardar el token
-      auth.login(res.data.token);
-
-      // Redirigimos al panel
-      navigate('/panel');
+      const { accessToken, user } = response.data;
+      auth.login(accessToken, user); // Guardar token y datos del usuario
+      
+      // El componente PanelRoles se encargará de redirigir al dashboard correcto
+      navigate("/panel", { replace: true });
 
     } catch (err) {
-      const errorMessage = err.response?.data?.msg || 'Error al iniciar sesión';
+      const errorMessage = err.response?.data?.msg || "Error al iniciar sesión. Verifique sus credenciales.";
       setError(errorMessage);
-      console.error('Error de login:', err.response || err);
+      console.error("Login failed", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ... El resto de tu componente JSX se queda igual ...
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <img src={logoColegio} alt="Logo del Colegio" className="logo" />
-        <h2>Iniciar Sesión</h2>
-        <form onSubmit={onSubmit}>
-          <div className="input-group">
+    <div className="login-page">
+      <div className="login-container">
+        
+        <div className="login-header">
+          <img src={logo} alt="Logo del Colegio" className="login-logo" />
+          <h1 className="login-title">Sistema de Gestión Escolar</h1>
+          <p className="login-subtitle">Colegio Mixto "El Jardín"</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="login-input-group">
             <label htmlFor="username">Usuario</label>
             <input
               type="text"
               id="username"
-              name="username"
               value={username}
-              onChange={onChange}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Ingrese su usuario"
               required
+              disabled={loading}
             />
           </div>
-          <div className="input-group">
+          
+          <div className="login-input-group">
             <label htmlFor="password">Contraseña</label>
             <input
               type="password"
               id="password"
-              name="password"
               value={password}
-              onChange={onChange}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Ingrese su contraseña"
               required
+              disabled={loading}
             />
           </div>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="login-button">Ingresar</button>
+          
+          {error && <p className="login-error">{error}</p>}
+          
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
         </form>
+
+        <footer className="login-footer">
+          <p>© 2025 Colegio Mixto "El Jardín". Todos los derechos reservados.</p>
+        </footer>
       </div>
     </div>
   );
 }
-
-export default Login;

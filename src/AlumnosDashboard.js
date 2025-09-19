@@ -1,7 +1,11 @@
+import { auth } from './auth';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './css/AlumnosDashboard.css'; // Crearemos este CSS
+
+const role = auth.getRole();
+const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
 
 export default function AlumnosDashboard() {
   const [alumnos, setAlumnos] = useState([]);
@@ -9,6 +13,8 @@ export default function AlumnosDashboard() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const role = auth.getRole();
+  const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
   
   const fetchAlumnos = async () => {
     try {
@@ -71,7 +77,7 @@ export default function AlumnosDashboard() {
         </header>
 
         <div className="ad-actions-bar">
-          <button className="ad-btn ad-btn--secondary" onClick={() => navigate('/coordinator/dashboard')}>
+          <button className="ad-btn ad-btn--secondary" onClick={() => navigate(backPath)}>
             ⬅ Volver al Panel
           </button>
           <button className="ad-btn ad-btn--primary" onClick={() => navigate('/alumnos/registro')}>

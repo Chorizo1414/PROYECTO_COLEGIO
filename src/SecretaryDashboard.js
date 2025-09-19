@@ -1,11 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./auth";
-import './css/SecretaryDashboard.css'; // Crearemos este archivo a continuación
+import './css/SecretaryDashboard.css'; // Crearemos este CSS a continuación
 
 export default function SecretaryDashboard() {
     const navigate = useNavigate();
 
+    // Opciones específicas para el rol de Secretaría
     const menuOptions = [
         { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir y modificar datos de estudiantes.', icon: '📚', path: '/alumnos' },
         { key: 'reg_padre', title: 'Registrar Encargado', desc: 'Añadir un nuevo padre o encargado al sistema.', icon: '👨‍👩‍👧', path: '/parent-register' },

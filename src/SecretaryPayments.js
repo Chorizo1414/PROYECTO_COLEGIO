@@ -1,14 +1,17 @@
+import { auth } from './auth';
 import React, { useState, useEffect, useMemo } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import "./css/SecretaryPayments.css";
 import logoColegio from "./assets/logo-colegio.png";
-import { auth } from './auth';
 
-// Ya no necesitamos la lista fija de GRADES ni MONTHS aquí
 
 export default function SecretaryPayments() {
   const navigate = useNavigate();
+
+  // Lógica de navegación dinámica
+  const role = auth.getRole();
+  const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
 
   // --- ESTADOS ---
   const [students, setStudents] = useState([]);
@@ -22,11 +25,6 @@ export default function SecretaryPayments() {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
-
-
-  // --- LÓGICA DE NAVEGACIÓN DINÁMICA ---
-  const role = auth.getRole();
-  const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
 
   useEffect(() => {
     const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
