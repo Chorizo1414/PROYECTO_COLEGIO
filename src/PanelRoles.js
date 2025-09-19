@@ -71,15 +71,16 @@ const PanelRolesStyles = () => (
 );
 
 const TODOS_LOS_PANELES = [
-  { key: "registro_docentes", title: "REGISTRO DOCENTES", emoji: "👩‍🏫", tone: "t-verde" },
-  { key: "maestros", title: "MAESTROS", emoji: "👨‍🏫", tone: "t-azul" },
-  { key: "secretaria", title: "SECRETARÍA", emoji: "📋", tone: "t-lila" },
-  { key: "registro_alumnos", title: "REGISTRO ALUMNOS", emoji: "📚", tone: "t-madera" },
+  { key: "registro_docentes", title: "REGISTRAR DOCENTES", emoji: "👩‍🏫", tone: "t-verde" },
+  { key: "registro_alumnos", title: "REGISTRAR ALUMNOS", emoji: "📚", tone: "t-madera" },
+  { key: "secretaria", title: "VER PAGOS (SECRETARÍA)", emoji: "📋", tone: "t-lila" },
+  { key: "maestros", title: "VER PANEL DE MAESTROS", emoji: "👨‍🏫", tone: "t-azul" },
 ];
 
 const ROLES_POR_PERFIL = {
   1: ["secretaria", "registro_alumnos"],
-  2: ["registro_docentes"], 
+  // CORRECCIÓN: El coordinador ahora ve los paneles de registro y los de supervisión.
+  2: ["registro_docentes", "registro_alumnos", "secretaria", "maestros"],
   3: ["maestros"],
 };
 
@@ -103,13 +104,14 @@ export default function PanelRoles() {
     return TODOS_LOS_PANELES.filter(panel => permisos.includes(panel.key));
   }, [userRole]);
 
-  // CORRECCIÓN: Se añade 'selectRole' al array de dependencias para eliminar el warning.
+  // Se encarga de la redirección automática SOLO si el rol tiene un único panel (ej. Docente)
   useEffect(() => {
-    if (panelesVisibles.length === 1) {
+    const permisos = ROLES_POR_PERFIL[userRole] || [];
+    if (permisos.length === 1 && panelesVisibles.length === 1) {
       const timer = setTimeout(() => selectRole(panelesVisibles[0].key), 50);
       return () => clearTimeout(timer);
     }
-  }, [panelesVisibles, selectRole]);
+  }, [panelesVisibles, selectRole, userRole]);
   
   const logout = () => {
     if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
@@ -118,8 +120,9 @@ export default function PanelRoles() {
     }
   };
 
-  if (panelesVisibles.length === 1 && ROLES_POR_PERFIL[userRole]?.length === 1) {
-      return <div className="pr-page">Redirigiendo a su panel...</div>;
+  // Mensaje de carga mientras se determina si se debe redirigir o no
+  if (ROLES_POR_PERFIL[userRole]?.length === 1) {
+      return <div className="pr-page">Cargando su panel...</div>;
   }
 
   return (
