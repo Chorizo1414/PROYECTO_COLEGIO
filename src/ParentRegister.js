@@ -24,7 +24,7 @@ export default function ParentRegister() {
     // Verificación por si no hay token
     if (!token) {
       alert("Sesión no válida. Por favor, inicie sesión de nuevo.");
-      navigate('/login'); // Redirige al login
+      navigate('/alumnos'); // Redirige al login
       return;
     }
 

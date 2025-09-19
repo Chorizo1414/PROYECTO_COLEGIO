@@ -12,6 +12,7 @@ import Alumnos from "./Alumnos";
 import AsignarCursos from "./AsignarCursos";
 import Cursos from "./Cursos";
 import SeleccionarDocente from "./SeleccionarDocente";
+import SecretaryDashboard from "./SecretaryDashboard"; 
 
 export default function App() {
   return (
@@ -28,19 +29,18 @@ export default function App() {
         <Route path="/gestionar-cursos/*" element={<ProtectedRoute><Cursos/></ProtectedRoute>} />
         <Route path="/asignar-cursos" element={<ProtectedRoute><AsignarCursos/></ProtectedRoute>} />
         
-        {/* RUTA CORREGIDA PARA GESTIONAR CURSOS */}
-        <Route path="/gestionar-cursos/*" element={<ProtectedRoute><Cursos/></ProtectedRoute>} />
 
         {/* --- RUTAS INDIVIDUALES --- */}
         <Route path="/parent-register" element={<ProtectedRoute><ParentRegister/></ProtectedRoute>} />
         <Route path="/panel/secretaria" element={<ProtectedRoute><SecretaryPayments/></ProtectedRoute>} />
         <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard/></ProtectedRoute>} />
+        <Route path="/secretary/dashboard" element={<ProtectedRoute><SecretaryDashboard /></ProtectedRoute>} />
         
         {/* --- RUTAS PARA VISTA DE DOCENTES --- */}
         <Route path="/seleccionar-docente" element={<ProtectedRoute><SeleccionarDocente/></ProtectedRoute>} /> {/* <-- 2. AÑADIR */}
         <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} /> {/* Para el propio docente */}
         <Route path="/ver-docente/:cui" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} /> {/* <-- 3. AÑADIR */}
-        
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

@@ -15,7 +15,7 @@ export default function PanelRoles() {
   useEffect(() => {
     switch (role) {
       case 1: // Rol de Secretaría
-        navigate('/panel/secretaria', { replace: true });
+        navigate('/secretary/dashboard', { replace: true });
         break;
       case 2: // Rol de Coordinador
         navigate('/coordinator/dashboard', { replace: true });

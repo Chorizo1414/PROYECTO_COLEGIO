@@ -23,7 +23,11 @@ export default function SecretaryPayments() {
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
 
-  // --- EFECTO PARA CARGAR DATOS DE LA API ---
+
+  // --- LÓGICA DE NAVEGACIÓN DINÁMICA ---
+  const role = auth.getRole();
+  const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
+
   useEffect(() => {
     const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
     if (!token) {
@@ -34,21 +38,12 @@ export default function SecretaryPayments() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('accessToken');
-        
-        // Usamos Promise.all para cargar todo en paralelo
         const [studentsResponse, gradesResponse] = await Promise.all([
-          axios.get('http://localhost:4000/api/students/details', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:4000/api/grades', { // 2. LLAMADA A LA API PARA OBTENER LOS GRADOS
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+          axios.get('http://localhost:4000/api/students/details', { headers: { 'Authorization': `Bearer ${token}` } }),
+          axios.get('http://localhost:4000/api/grades', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
-        
         setStudents(studentsResponse.data);
-        setGrados(gradesResponse.data); // Guardamos los grados en el nuevo estado
-        
+        setGrados(gradesResponse.data);
       } catch (err) {
         setError('Error al cargar los datos.');
         console.error(err);
@@ -56,7 +51,6 @@ export default function SecretaryPayments() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [navigate, refreshKey]);
 
@@ -112,7 +106,7 @@ export default function SecretaryPayments() {
   return (
     <div className="sp-page">
       <header className="sp-header">
-        <button onClick={() => navigate('/coordinator/dashboard')} className="sp-back-button">
+        <button onClick={() => navigate(backPath)} className="sp-back-button">
           ‹ Volver al Panel
         </button>
         <img src={logoColegio} alt="Colegio Mixto El Jardín" className="sp-logo" />

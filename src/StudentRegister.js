@@ -157,7 +157,7 @@ export default function StudentRegister() {
         </form>
 
         <footer className="reg-footer">
-          <Link to="/panel" className="reg-back">Volver al panel</Link>
+          <Link to="/alumnos" className="reg-back">Volver a Gestión de Alumnos</Link>
         </footer>
       </div>
     </div>
