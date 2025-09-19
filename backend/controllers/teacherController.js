@@ -185,20 +185,27 @@ const getTeacherAssignments = async (req, res) => {
 const getAssignmentData = async (req, res) => {
   const { assignmentId } = req.params;
   try {
-    const asignacionQuery = await pool.query("SELECT id_grado, id_seccion FROM asignacion_curso WHERE id_asignacion = $1", [assignmentId]);
-    if (asignacionQuery.rows.length === 0) return res.status(404).json({ msg: "Asignación no encontrada" });
+    // <-- CAMBIO: Se usa el nuevo nombre de la tabla 'asignacion_docente'
+    const asignacionQuery = await pool.query("SELECT id_grado, id_seccion FROM asignacion_docente WHERE id_asignacion = $1", [assignmentId]);
+    
+    if (asignacionQuery.rows.length === 0) {
+      return res.status(404).json({ msg: "Asignación no encontrada" });
+    }
+    
     const { id_grado, id_seccion } = asignacionQuery.rows[0];
     const studentsQuery = await pool.query("SELECT cui_estudiante, nombres, apellidos FROM estudiantes WHERE id_grado = $1 AND id_seccion = $2 ORDER BY apellidos, nombres", [id_grado, id_seccion]);
     const tasksQuery = await pool.query("SELECT id_tarea, titulo, fecha_entrega FROM tareas WHERE id_asignacion = $1 ORDER BY fecha_entrega DESC", [assignmentId]);
     const deliveriesQuery = await pool.query(`SELECT e.cui_estudiante, e.id_tarea, e.entregado FROM entregas e JOIN tareas t ON e.id_tarea = t.id_tarea WHERE t.id_asignacion = $1`, [assignmentId]);
+    
     const deliveriesMap = deliveriesQuery.rows.reduce((acc, delivery) => {
       if (!acc[delivery.cui_estudiante]) acc[delivery.cui_estudiante] = {};
       acc[delivery.cui_estudiante][delivery.id_tarea] = delivery.entregado;
       return acc;
     }, {});
+
     res.json({ students: studentsQuery.rows, tasks: tasksQuery.rows, deliveries: deliveriesMap });
   } catch (err) {
-    console.error(err.message);
+    console.error('Error al obtener datos de la asignación:', err.message);
     res.status(500).send("Error en el servidor");
   }
 };
