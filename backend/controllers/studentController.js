@@ -1,25 +1,168 @@
-const pool = require('../config/db'); // Importamos la conexión a la BD
+const pool = require('../config/db');
 
-// --- Crear un nuevo estudiante ---
-const createStudent = async (req, res) => {
-  // Obtenemos los datos del cuerpo de la petición
-  const { cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, usuario_agrego } = req.body;
-  // La sección es opcional: si no viene, será null.
-  const id_seccion = req.body.id_seccion || null;
-
+// --- OBTENER TODOS LOS ESTUDIANTES (VISTA PARA COORDINADOR) ---
+const getAllStudentsForCoordinator = async (req, res) => {
   try {
-    const newStudent = await pool.query(
-      "INSERT INTO estudiantes (cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego, estado_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1) RETURNING *",
-      // Pasamos la variable id_seccion que puede ser null
-      [cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego]
-    );
-    res.status(201).json(newStudent.rows[0]);
+    const query = `
+      SELECT
+        e.cui_estudiante,
+        e.nombres || ' ' || e.apellidos AS nombre_completo,
+        g.nombre_grado,
+        s.nombre_seccion,
+        p.nombre_completo AS nombre_padre,
+        e.estado_id
+      FROM estudiantes e
+      LEFT JOIN grados g ON e.id_grado = g.id_grado
+      LEFT JOIN secciones s ON e.id_seccion = s.id_seccion
+      LEFT JOIN alumno_responsable ar ON e.cui_estudiante = ar.cui_estudiante AND ar.principal = TRUE
+      LEFT JOIN padres p ON ar.cui_padre = p.cui_padre
+      ORDER BY e.apellidos, e.nombres;
+    `;
+    const { rows } = await pool.query(query);
+    res.json(rows);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error en el servidor');
+    console.error('Error al listar estudiantes para coordinador:', err.message);
+    res.status(500).send("Error en el servidor");
   }
 };
 
+// --- OBTENER UN ESTUDIANTE POR SU CUI ---
+const getStudentByCui = async (req, res) => {
+    const { cui } = req.params;
+    try {
+        const studentQuery = `
+            SELECT 
+                e.cui_estudiante, e.nombres, e.apellidos, e.fecha_nacimiento, e.genero_id, e.id_grado, e.id_seccion, e.estado_id,
+                ar.cui_padre
+            FROM estudiantes e
+            LEFT JOIN alumno_responsable ar ON e.cui_estudiante = ar.cui_estudiante AND ar.principal = TRUE
+            WHERE e.cui_estudiante = $1;
+        `;
+        const { rows } = await pool.query(studentQuery, [cui]);
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: 'Estudiante no encontrado.' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(`Error al obtener estudiante ${cui}:`, err.message);
+        res.status(500).send("Error en el servidor");
+    }
+};
+
+// --- CREAR UN NUEVO ESTUDIANTE ---
+const createStudent = async (req, res) => {
+  const { cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, cui_padre } = req.body;
+  const usuario_agrego = req.user.username; // Obtenido del token
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Insertar el estudiante
+    const newStudentRes = await client.query(
+      "INSERT INTO estudiantes (cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, usuario_agrego, estado_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1) RETURNING cui_estudiante",
+      [cui_estudiante, nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion || null, usuario_agrego]
+    );
+    const createdStudentCui = newStudentRes.rows[0].cui_estudiante;
+
+    // 2. Si se proporcionó un padre, vincularlo
+    if (cui_padre) {
+      await client.query(
+        "INSERT INTO alumno_responsable (cui_estudiante, cui_padre, principal) VALUES ($1, $2, TRUE)",
+        [createdStudentCui, cui_padre]
+      );
+    }
+    
+    await client.query('COMMIT');
+    res.status(201).json({ msg: 'Estudiante creado y vinculado con éxito.' });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error en el registro de estudiante:', err.message);
+    
+    if (err.code === '23503') { // Error de llave foránea
+        return res.status(400).json({ msg: 'El CUI del padre no existe. Por favor, registre al padre primero.' });
+    }
+    if (err.code === '23505') { // Error de CUI de estudiante duplicado
+      return res.status(400).json({ msg: 'El CUI del estudiante ya está registrado.' });
+    }
+    res.status(500).send("Error en el servidor");
+  } finally {
+    client.release();
+  }
+};
+
+// --- ACTUALIZAR UN ESTUDIANTE ---
+const updateStudent = async (req, res) => {
+    const { cui } = req.params;
+    const { nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion, cui_padre, estado_id } = req.body;
+    const usuario_modifico = req.user.username;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // 1. Actualizar datos del estudiante
+        await client.query(
+            `UPDATE estudiantes SET nombres=$1, apellidos=$2, fecha_nacimiento=$3, genero_id=$4, id_grado=$5, id_seccion=$6, estado_id=$7, usuario_modifico=$8, fecha_modifico=NOW() WHERE cui_estudiante=$9`,
+            [nombres, apellidos, fecha_nacimiento, genero_id, id_grado, id_seccion || null, estado_id, usuario_modifico, cui]
+        );
+        // 2. Actualizar el padre/responsable principal
+        if (cui_padre) {
+            await client.query(
+                `INSERT INTO alumno_responsable (cui_estudiante, cui_padre, principal) VALUES ($1, $2, TRUE)
+                 ON CONFLICT (cui_estudiante, cui_padre) DO UPDATE SET principal = TRUE`,
+                [cui, cui_padre]
+            );
+            await client.query(
+                `UPDATE alumno_responsable SET principal = FALSE WHERE cui_estudiante = $1 AND cui_padre != $2`,
+                [cui, cui_padre]
+            );
+        }
+        await client.query('COMMIT');
+        res.json({ msg: 'Estudiante actualizado con éxito' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error al actualizar estudiante:', err.message);
+        res.status(500).send('Error en el servidor');
+    } finally {
+        client.release();
+    }
+};
+
+// --- DAR DE BAJA A UN ESTUDIANTE (SOFT DELETE) ---
+const deactivateStudent = async (req, res) => {
+    const { cui } = req.params;
+    const usuario_modifico = req.user.username;
+    const INACTIVO_ESTADO_ID = 2; // Asumiendo 2 = Inactivo
+    try {
+        await pool.query(
+            'UPDATE estudiantes SET estado_id = $1, usuario_modifico = $2, fecha_modifico = NOW() WHERE cui_estudiante = $3',
+            [INACTIVO_ESTADO_ID, usuario_modifico, cui]
+        );
+        res.json({ msg: 'Estudiante dado de baja con éxito' });
+    } catch (err) {
+        console.error('Error al dar de baja al estudiante:', err.message);
+        res.status(500).send('Error en el servidor');
+    }
+};
+
+// --- REACTIVAR A UN ESTUDIANTE ---
+const activateStudent = async (req, res) => {
+    const { cui } = req.params;
+    const usuario_modifico = req.user.username;
+    const ACTIVO_ESTADO_ID = 1; // Asumiendo 1 = Activo
+    try {
+        await pool.query(
+            'UPDATE estudiantes SET estado_id = $1, usuario_modifico = $2, fecha_modifico = NOW() WHERE cui_estudiante = $3',
+            [ACTIVO_ESTADO_ID, usuario_modifico, cui]
+        );
+        res.json({ msg: 'Estudiante reactivado con éxito' });
+    } catch (err) {
+        console.error('Error al reactivar al estudiante:', err.message);
+        res.status(500).send('Error en el servidor');
+    }
+};
+
+// --- FUNCIONES PARA SECRETARÍA ---
 // --- Obtener todos los estudiantes ---
 const getAllStudents = async (req, res) => {
   try {
@@ -111,6 +254,11 @@ module.exports = {
   createStudent,
   getAllStudents,
   linkParentToStudent,
-  getStudentsWithDetails, // <--- AÑADE ESTA LÍNEA
-  updateFinancialStatus,  // <--- Y ESTA LÍNEA
+  getStudentsWithDetails, 
+  updateFinancialStatus,
+  getAllStudentsForCoordinator, 
+  getStudentByCui,             
+  updateStudent,                
+  deactivateStudent,
+  activateStudent  
 };

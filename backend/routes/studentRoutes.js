@@ -3,25 +3,27 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const { 
   createStudent, 
-  getAllStudents, 
   linkParentToStudent,
   getStudentsWithDetails,  
-  updateFinancialStatus       
+  updateFinancialStatus,
+  getAllStudentsForCoordinator,
+  getStudentByCui,
+  updateStudent,
+  deactivateStudent,
+  activateStudent
 } = require('../controllers/studentController');
 
-// POST /api/students -> Crear un estudiante
-router.post('/', authMiddleware, createStudent);
-
-// GET /api/students -> Obtener todos los estudiantes
-router.get('/', authMiddleware, getAllStudents);
-
-// POST /api/students/link-parent -> Vincular un padre a un estudiante
+// --- RUTAS DE SECRETARÍA (las más específicas van primero) ---
+router.get('/details', authMiddleware, getStudentsWithDetails);
+router.post('/financial-status', authMiddleware, updateFinancialStatus);
 router.post('/link-parent', authMiddleware, linkParentToStudent);
 
-// GET /api/students/details -> Obtener lista de alumnos para secretaría (NUEVA)
-router.get('/details', authMiddleware, getStudentsWithDetails);
-
-// POST /api/students/financial-status -> Marcar como solvente (NUEVA)
-router.post('/financial-status', authMiddleware, updateFinancialStatus);
+// --- RUTAS DE GESTIÓN (Coordinador) ---
+router.get('/', authMiddleware, getAllStudentsForCoordinator);
+router.post('/', authMiddleware, createStudent);
+router.put('/activate/:cui', authMiddleware, activateStudent);
+router.put('/deactivate/:cui', authMiddleware, deactivateStudent);
+router.get('/:cui', authMiddleware, getStudentByCui); // Las rutas con parámetros van al final
+router.put('/:cui', authMiddleware, updateStudent);
 
 module.exports = router;

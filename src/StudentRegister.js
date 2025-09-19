@@ -55,37 +55,30 @@ export default function StudentRegister() {
       return navigate('/login');
     }
 
-  // Prepara los datos del estudiante para la API
-  const studentData = {
-    cui_estudiante: form.cuiEst,
-    nombres: form.nombres,
-    apellidos: form.apellidos,
-    fecha_nacimiento: form.fechaNac,
-    genero_id: form.genero === 'F' ? 1 : 2, // Temporalmente, luego lo harás dinámico
-    id_grado: form.id_grado,  // Temporalmente, luego lo harás dinámico
-    usuario_agrego: "secretaria"
-  };
+    // Prepara todos los datos en un solo objeto
+    const studentData = {
+      cui_estudiante: form.cuiEst,
+      nombres: form.nombres,
+      apellidos: form.apellidos,
+      fecha_nacimiento: form.fechaNac,
+      genero_id: form.genero === 'F' ? 1 : 2,
+      id_grado: form.id_grado,
+      id_seccion: form.id_seccion, // Asegúrate de que este campo esté en tu estado 'form'
+      cui_padre: form.cuiPadre, // El CUI del padre va en el mismo objeto
+      usuario_agrego: "secretaria" // O puedes obtenerlo del token
+    };
 
-  try {
-      // Guardar al estudiante
+    try {
+      // UNA SOLA LLAMADA A LA API
       await axios.post('http://localhost:4000/api/students', studentData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      // Vincular al padre
-      const linkData = {
-        cui_estudiante: form.cuiEst,
-        cui_padre: form.cuiPadre
-      };
-      await axios.post('http://localhost:4000/api/students/link-parent', linkData, {
-          headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      alert('¡Estudiante y padre vinculados con éxito!');
-      navigate('/panel'); // Redirige al panel
+      alert('¡Estudiante guardado con éxito!');
+      navigate('/alumnos'); // Redirige al nuevo dashboard de alumnos
 
     } catch (error) {
-      const errorMessage = error.response?.data?.msg || error.message;
+      const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
       console.error('Error al guardar:', errorMessage);
       alert('Error al guardar: ' + errorMessage);
     }

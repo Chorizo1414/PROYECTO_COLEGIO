@@ -3,12 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login";
 import PanelRoles from "./PanelRoles";
 import ProtectedRoute from "./ProtectedRoute";
-import StudentRegister from "./StudentRegister";
 import ParentRegister from "./ParentRegister";
 import SecretaryPayments from "./SecretaryPayments";
 import TeacherDashboard from "./TeacherDashboard";
 import Docentes from "./Docentes";
-import CoordinatorDashboard from "./CoordinatorDashboard"; // <-- 1. IMPORTAR EL NUEVO PANEL
+import CoordinatorDashboard from "./CoordinatorDashboard";
+import Alumnos from "./Alumnos"; // <-- 1. IMPORTAR
 
 export default function App() {
   return (
@@ -16,67 +16,17 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/panel" element={<ProtectedRoute><PanelRoles/></ProtectedRoute>} />
+        <Route path="/coordinator/dashboard" element={<ProtectedRoute><CoordinatorDashboard/></ProtectedRoute>} />
+        
+        {/* --- MÓDULOS --- */}
+        <Route path="/docentes/*" element={<ProtectedRoute><Docentes/></ProtectedRoute>} />
+        <Route path="/alumnos/*" element={<ProtectedRoute><Alumnos/></ProtectedRoute>} /> {/* <-- 2. AÑADIR RUTA DEL MÓDULO */}
 
-        <Route
-          path="/panel"
-          element={
-            <ProtectedRoute>
-              <PanelRoles />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* 2. AÑADIR LA RUTA PARA EL PANEL DE COORDINACIÓN */}
-        <Route
-          path="/coordinator/dashboard"
-          element={
-            <ProtectedRoute>
-              <CoordinatorDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* --- El resto de tus rutas --- */}
-        <Route
-          path="/docentes/*"
-          element={
-            <ProtectedRoute>
-              <Docentes />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student-register"
-          element={
-            <ProtectedRoute>
-              <StudentRegister />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/parent-register"
-          element={
-            <ProtectedRoute>
-              <ParentRegister />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/panel/secretaria"
-          element={
-            <ProtectedRoute>
-              <SecretaryPayments />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/teacher"
-          element={
-            <ProtectedRoute>
-              <TeacherDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* --- RUTAS INDIVIDUALES --- */}
+        <Route path="/parent-register" element={<ProtectedRoute><ParentRegister/></ProtectedRoute>} />
+        <Route path="/panel/secretaria" element={<ProtectedRoute><SecretaryPayments/></ProtectedRoute>} />
+        <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard/></ProtectedRoute>} />
         
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

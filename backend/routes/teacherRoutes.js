@@ -13,21 +13,17 @@ const {
     deactivateTeacher
 } = require('../controllers/teacherController');
 
-// GET /api/teachers
-router.get('/', authMiddleware, getAllTeachers);
-
-router.get('/:cui', authMiddleware, getTeacherByCui);
-router.put('/:cui', authMiddleware, updateTeacher);
-router.put('/deactivate/:cui', authMiddleware, deactivateTeacher);
-
-// Ruta para que el Coordinador registre un nuevo docente y su usuario
+// --- Rutas específicas primero ---
 router.post('/register', authMiddleware, registerTeacherAndUser);
-
-// --- Rutas para el Panel del Docente (se mantienen igual) ---
 router.get('/assignments', authMiddleware, getTeacherAssignments);
 router.get('/assignment-data/:assignmentId', authMiddleware, getAssignmentData);
 router.post('/tasks', authMiddleware, createTask);
 router.post('/deliveries', authMiddleware, saveDeliveries);
 
-module.exports = router;
+// --- Rutas generales después ---
+router.get('/', authMiddleware, getAllTeachers);
+router.put('/deactivate/:cui', authMiddleware, deactivateTeacher);
+router.get('/:cui', authMiddleware, getTeacherByCui);
+router.put('/:cui', authMiddleware, updateTeacher);
 
+module.exports = router;
