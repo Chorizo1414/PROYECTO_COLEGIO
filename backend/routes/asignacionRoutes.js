@@ -5,11 +5,13 @@ const {
     getAsignaciones, 
     createAsignacion, 
     deleteAsignacion,
-    getCursosByGrado
+    getCursosByGrado,
+    updateAsignacion // <-- Importar
 } = require('../controllers/asignacionController');
 
 router.get('/', authMiddleware, getAsignaciones);
 router.post('/', authMiddleware, createAsignacion);
+router.put('/:id', authMiddleware, updateAsignacion); // <-- AÑADIR RUTA PUT
 router.delete('/:id', authMiddleware, deleteAsignacion);
 router.get('/cursos/:gradeId', authMiddleware, getCursosByGrado);
 

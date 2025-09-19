@@ -54,3 +54,35 @@
   .ac-grid { grid-template-columns: 1fr; }
   .ac-list { max-height: none; }
 }
+
+.ac-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.ac-form-actions .ac-btn {
+  flex-grow: 1;
+}
+.ac-btn--secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+.ac-item-actions {
+  display: flex;
+  gap: 8px;
+}
+.ac-action-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.ac-action-btn.ac-delete-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}

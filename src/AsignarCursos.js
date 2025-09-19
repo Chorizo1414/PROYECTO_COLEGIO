@@ -11,51 +11,56 @@ const AsignarCursos = () => {
   const [secciones, setSecciones] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [asignaciones, setAsignaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ESTADO PARA SABER SI ESTAMOS EDITANDO
+  const [editingId, setEditingId] = useState(null);
 
   // Estados del formulario
-  const [form, setForm] = useState({
+  const initialFormState = {
     cui_docente: '',
     id_grado: '',
     id_seccion: '',
     id_curso: '',
     anio: new Date().getFullYear(),
-  });
-
-  const [loading, setLoading] = useState(true);
+  };
+  const [form, setForm] = useState(initialFormState);
 
   // Carga inicial de datos
-  useEffect(() => {
+  const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
-    const fetchData = async () => {
-      try {
-        const [docentesRes, gradosRes, asignacionesRes] = await Promise.all([
-          axios.get('http://localhost:4000/api/teachers', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:4000/api/grades', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:4000/api/asignaciones', { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        setDocentes(docentesRes.data.filter(d => d.estado_id === 1)); // Solo activos
-        setGrados(gradosRes.data);
-        setAsignaciones(asignacionesRes.data);
-      } catch (error) {
-        console.error("Error al cargar datos iniciales:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      const [docentesRes, gradosRes, asignacionesRes] = await Promise.all([
+        axios.get('http://localhost:4000/api/teachers', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:4000/api/grades', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:4000/api/asignaciones', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      setDocentes(docentesRes.data.filter(d => d.estado_id === 1));
+      setGrados(gradosRes.data);
+      setAsignaciones(asignacionesRes.data);
+    } catch (error) {
+      console.error("Error al cargar datos iniciales:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  // Cargar secciones cuando cambia el grado
+  // Cargar secciones y cursos cuando cambia el grado
   useEffect(() => {
+    const token = localStorage.getItem('accessToken');
     if (form.id_grado) {
-      const token = localStorage.getItem('accessToken');
       axios.get(`http://localhost:4000/api/grades/${form.id_grado}/sections`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => setSecciones(res.data))
-        .catch(err => console.error("Error al cargar secciones", err));
-        
+        .then(res => setSecciones(res.data));
       axios.get(`http://localhost:4000/api/asignaciones/cursos/${form.id_grado}`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => setCursos(res.data))
-        .catch(err => console.error("Error al cargar cursos", err));
+        .then(res => setCursos(res.data));
+    } else {
+      setSecciones([]);
+      setCursos([]);
     }
   }, [form.id_grado]);
 
@@ -64,31 +69,66 @@ const AsignarCursos = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleEditClick = (asignacion) => {
+    setEditingId(asignacion.id_asignacion);
+    // Buscamos los IDs correctos para poblar el formulario
+    const docente = docentes.find(d => d.nombre_completo === asignacion.docente);
+    const grado = grados.find(g => g.nombre_grado === asignacion.grado);
+    // Necesitamos hacer esto en pasos para que los selects dependientes se carguen
+    setForm({
+      cui_docente: docente ? docente.cui_docente : '',
+      id_grado: grado ? grado.id_grado : '',
+      id_seccion: '', // Se cargará con el useEffect
+      id_curso: '',   // Se cargará con el useEffect
+      anio: asignacion.anio,
+    });
+  
+    // Pequeño truco para poblar los selects dependientes
+    setTimeout(() => {
+        const curso = cursos.find(c => c.nombre_curso === asignacion.curso);
+        const seccion = secciones.find(s => s.nombre_seccion === asignacion.seccion);
+        setForm(prev => ({
+            ...prev,
+            id_curso: curso ? curso.id_curso : '',
+            id_seccion: seccion ? seccion.id_seccion : '',
+        }));
+    }, 200);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm(initialFormState);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
+    const url = editingId 
+      ? `http://localhost:4000/api/asignaciones/${editingId}` 
+      : 'http://localhost:4000/api/asignaciones';
+    const method = editingId ? 'put' : 'post';
+
     try {
-      await axios.post('http://localhost:4000/api/asignaciones', form, { headers: { Authorization: `Bearer ${token}` } });
-      alert('Asignación creada con éxito');
-      // Recargar la lista de asignaciones
-      const asignacionesRes = await axios.get('http://localhost:4000/api/asignaciones', { headers: { Authorization: `Bearer ${token}` } });
-      setAsignaciones(asignacionesRes.data);
+      await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
+      alert(`Asignación ${editingId ? 'actualizada' : 'creada'} con éxito`);
+      handleCancelEdit(); // Limpiar formulario y modo edición
+      fetchData(); // Recargar todo
     } catch (error) {
-      alert('Error al crear la asignación: ' + (error.response?.data?.msg || 'Error inesperado'));
+      alert('Error: ' + (error.response?.data?.msg || 'Error inesperado'));
     }
   };
   
   const handleDelete = async (id) => {
-      if (window.confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
-          const token = localStorage.getItem('accessToken');
-          try {
-              await axios.delete(`http://localhost:4000/api/asignaciones/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-              setAsignaciones(asignaciones.filter(a => a.id_asignacion !== id));
-              alert('Asignación eliminada.');
-          } catch (error) {
-              alert('Error al eliminar.');
-          }
-      }
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
+        const token = localStorage.getItem('accessToken');
+        try {
+            await axios.delete(`http://localhost:4000/api/asignaciones/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            fetchData();
+            alert('Asignación eliminada.');
+        } catch (error) {
+            alert('Error al eliminar.');
+        }
+    }
   };
 
   if (loading) return <div>Cargando...</div>;
@@ -100,14 +140,12 @@ const AsignarCursos = () => {
           <h1>Asignación de Cursos</h1>
           <p>Asigna grados, secciones y cursos a cada docente para el ciclo actual.</p>
         </header>
-
         <button className="ac-btn-volver" onClick={() => navigate('/coordinator/dashboard')}>
           ⬅ Volver al Panel de Coordinación
         </button>
-        
         <div className="ac-grid">
           <div className="ac-card">
-            <h2>Nueva Asignación</h2>
+            <h2>{editingId ? 'Modificar Asignación' : 'Nueva Asignación'}</h2>
             <form onSubmit={handleSubmit} className="ac-form">
               <select name="cui_docente" value={form.cui_docente} onChange={handleChange} required>
                 <option value="">-- Seleccione un Docente --</option>
@@ -126,10 +164,12 @@ const AsignarCursos = () => {
                 {cursos.map(c => <option key={c.id_curso} value={c.id_curso}>{c.nombre_curso}</option>)}
               </select>
               <input type="number" name="anio" value={form.anio} onChange={handleChange} required />
-              <button type="submit" className="ac-btn ac-btn--primary">Asignar Curso</button>
+              <div className="ac-form-actions">
+                {editingId && <button type="button" className="ac-btn ac-btn--secondary" onClick={handleCancelEdit}>Cancelar</button>}
+                <button type="submit" className="ac-btn ac-btn--primary">{editingId ? 'Guardar Cambios' : 'Asignar Curso'}</button>
+              </div>
             </form>
           </div>
-          
           <div className="ac-card">
             <h2>Asignaciones Actuales</h2>
             <div className="ac-list">
@@ -139,7 +179,10 @@ const AsignarCursos = () => {
                     <strong className="ac-docente">{a.docente}</strong>
                     <span className="ac-detalle">{a.grado} {a.seccion} - {a.curso} ({a.anio})</span>
                   </div>
-                  <button className="ac-delete-btn" onClick={() => handleDelete(a.id_asignacion)}>🗑️</button>
+                  <div className="ac-item-actions">
+                    <button className="ac-action-btn" onClick={() => handleEditClick(a)}>✏️</button>
+                    <button className="ac-action-btn ac-delete-btn" onClick={() => handleDelete(a.id_asignacion)}>🗑️</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -149,5 +192,4 @@ const AsignarCursos = () => {
     </div>
   );
 };
-
 export default AsignarCursos;

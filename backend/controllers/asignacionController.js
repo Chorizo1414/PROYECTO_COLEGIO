@@ -77,9 +77,42 @@ const getCursosByGrado = async (req, res) => {
     }
 };
 
+// ACTUALIZAR UNA ASIGNACIÓN EXISTENTE
+const updateAsignacion = async (req, res) => {
+  const { id } = req.params;
+  const { cui_docente, id_curso, id_grado, id_seccion, anio } = req.body;
+  const usuario_modifico = req.user.username;
+
+  try {
+    const query = `
+      UPDATE asignacion_curso 
+      SET 
+        cui_docente = $1, 
+        id_curso = $2, 
+        id_grado = $3, 
+        id_seccion = $4, 
+        anio = $5,
+        usuario_modifico = $6,
+        fecha_modifico = NOW()
+      WHERE id_asignacion = $7
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [cui_docente, id_curso, id_grado, id_seccion, anio, usuario_modifico, id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Asignación no encontrada para actualizar.' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error al actualizar asignación:', err.message);
+    res.status(500).json({ msg: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   getAsignaciones,
   createAsignacion,
   deleteAsignacion,
   getCursosByGrado,
+  updateAsignacion
 };

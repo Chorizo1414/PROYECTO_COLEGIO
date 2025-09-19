@@ -10,6 +10,7 @@ import Docentes from "./Docentes";
 import CoordinatorDashboard from "./CoordinatorDashboard";
 import Alumnos from "./Alumnos";
 import AsignarCursos from "./AsignarCursos";
+import Cursos from "./Cursos";
 
 export default function App() {
   return (
@@ -22,8 +23,11 @@ export default function App() {
         
         {/* --- MÓDULOS --- */}
         <Route path="/docentes/*" element={<ProtectedRoute><Docentes/></ProtectedRoute>} />
-        <Route path="/alumnos/*" element={<ProtectedRoute><Alumnos/></ProtectedRoute>} /> 
-        <Route path="/asignar-cursos" element={<ProtectedRoute><AsignarCursos/></ProtectedRoute>} /> 
+        <Route path="/alumnos/*" element={<ProtectedRoute><Alumnos/></ProtectedRoute>} />
+        <Route path="/asignar-cursos" element={<ProtectedRoute><AsignarCursos/></ProtectedRoute>} />
+        
+        {/* RUTA CORREGIDA PARA GESTIONAR CURSOS */}
+        <Route path="/gestionar-cursos/*" element={<ProtectedRoute><Cursos/></ProtectedRoute>} />
 
         {/* --- RUTAS INDIVIDUALES --- */}
         <Route path="/parent-register" element={<ProtectedRoute><ParentRegister/></ProtectedRoute>} />
