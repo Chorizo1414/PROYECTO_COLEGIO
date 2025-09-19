@@ -1,0 +1,91 @@
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { auth } from "./auth"; 
+
+// Estilos integrados para evitar errores de importación
+const CoordinatorDashboardStyles = () => (
+    <style>{`
+      .cdb-page { min-height: 100vh; background: #f1f5f9; padding: 24px; font-family: sans-serif; }
+      .cdb-container { max-width: 1200px; margin: 0 auto; }
+      .cdb-header {
+        background: linear-gradient(135deg, var(--azul) 0%, #155e75 100%);
+        color: white; padding: 28px; border-radius: 24px; text-align: center;
+        margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.1);
+      }
+      .cdb-header h1 { margin: 0; font-size: 24px; letter-spacing: .5px; }
+      .cdb-header p { margin: 4px 0 0; opacity: 0.9; }
+      .cdb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+      .cdb-card {
+        background: white; border-radius: 16px; padding: 24px;
+        text-align: center; cursor: pointer; transition: all 0.2s ease;
+        border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,.05);
+      }
+      .cdb-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+      .cdb-icon { font-size: 36px; margin-bottom: 12px; }
+      .cdb-title { font-weight: 700; font-size: 16px; color: #1e293b; margin: 0 0 4px; }
+      .cdb-desc { font-size: 14px; color: #64748b; margin: 0; }
+      .cdb-actions { display: flex; justify-content: center; margin-top: 32px; }
+      .cdb-btn-logout {
+        background: var(--rojo); color: white; border: none; padding: 12px 24px;
+        border-radius: 12px; font-weight: 700; cursor: pointer;
+      }
+    `}</style>
+);
+
+
+export default function CoordinatorDashboard() {
+    const navigate = useNavigate();
+
+    const menuOptions = [
+        { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar, modificar y asignar cursos.', icon: '👩‍🏫', path: '/docentes/registro' },
+        { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignarles sección.', icon: '📚', path: '/student-register' },
+        { key: 'ver_secretaria', title: 'Panel de Secretaría', desc: 'Supervisar el estado de pagos de los alumnos.', icon: '📋', path: '/panel/secretaria' },
+        { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver la interfaz y el progreso de los maestros.', icon: '👨‍🏫', path: '/teacher' },
+        { key: 'asignar_cursos', title: 'Asignar Cursos', desc: 'Asignar materias y grados a los docentes.', icon: '✏️', path: '#' },
+        { key: 'reportes', title: 'Reportes Generales', desc: 'Ver estadísticas y reportes consolidados.', icon: '📊', path: '#' },
+    ];
+    
+    const handleNavigation = (path) => {
+        if (path === '#') {
+            alert('¡Funcionalidad en construcción!');
+        } else {
+            navigate(path);
+        }
+    };
+
+    const logout = () => {
+        if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+            auth.logout();
+            navigate("/login", { replace: true });
+        }
+    };
+
+    return (
+        <>
+            <CoordinatorDashboardStyles />
+            <div className="cdb-page">
+                <div className="cdb-container">
+                    <header className="cdb-header">
+                        <h1>Panel de Coordinación</h1>
+                        <p>Gestión y supervisión del sistema académico</p>
+                    </header>
+
+                    <main className="cdb-grid">
+                        {menuOptions.map(opt => (
+                            <div key={opt.key} className="cdb-card" onClick={() => handleNavigation(opt.path)}>
+                                <div className="cdb-icon">{opt.icon}</div>
+                                <h3 className="cdb-title">{opt.title}</h3>
+                                <p className="cdb-desc">{opt.desc}</p>
+                            </div>
+                        ))}
+                    </main>
+
+                     <section className="cdb-actions">
+                        <button className="cdb-btn-logout" onClick={logout}>🚪 Cerrar Sesión</button>
+                    </section>
+                </div>
+            </div>
+        </>
+    );
+}
+
