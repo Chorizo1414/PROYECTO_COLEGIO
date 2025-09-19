@@ -17,7 +17,7 @@ const {
 // --- Rutas específicas primero ---
 router.post('/register', authMiddleware, registerTeacherAndUser);
 router.get('/assigned', authMiddleware, getAssignedTeachers);
-router.get('/assignments', authMiddleware, getTeacherAssignments);
+router.get('/assignments/:cui', authMiddleware, getTeacherAssignments);
 router.get('/assignment-data/:assignmentId', authMiddleware, getAssignmentData);
 router.post('/tasks', authMiddleware, createTask);
 router.post('/deliveries', authMiddleware, saveDeliveries);

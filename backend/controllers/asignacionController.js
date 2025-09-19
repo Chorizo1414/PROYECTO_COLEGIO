@@ -5,19 +5,21 @@ const getAsignaciones = async (req, res) => {
   try {
     const query = `
       SELECT 
-        ac.id_asignacion,
+        ad.id_asignacion,
         d.nombre_completo AS docente,
-        c.nombre_curso AS curso,
         g.nombre_grado AS grado,
         s.nombre_seccion AS seccion,
-        ac.anio
-      FROM asignacion_curso ac
-      JOIN docentes d ON ac.cui_docente = d.cui_docente
-      JOIN cursos c ON ac.id_curso = c.id_curso
-      JOIN grados g ON ac.id_grado = g.id_grado
-      JOIN secciones s ON ac.id_seccion = s.id_seccion
+        ad.anio,
+        ARRAY_AGG(c.nombre_curso) as cursos -- Agrupamos los nombres de los cursos en un array
+      FROM asignacion_docente ad
+      JOIN docentes d ON ad.cui_docente = d.cui_docente
+      JOIN grados g ON ad.id_grado = g.id_grado
+      JOIN secciones s ON ad.id_seccion = s.id_seccion
+      LEFT JOIN asignacion_cursos_detalle acd ON ad.id_asignacion = acd.id_asignacion
+      LEFT JOIN cursos c ON acd.id_curso = c.id_curso
       WHERE d.estado_id = 1
-      ORDER BY d.nombre_completo, ac.anio DESC, g.nombre_grado, c.nombre_curso;
+      GROUP BY ad.id_asignacion, d.nombre_completo, g.nombre_grado, s.nombre_seccion, ad.anio
+      ORDER BY d.nombre_completo, ad.anio DESC, g.nombre_grado;
     `;
     const { rows } = await pool.query(query);
     res.json(rows);
@@ -29,23 +31,49 @@ const getAsignaciones = async (req, res) => {
 
 // CREAR UNA NUEVA ASIGNACIÓN
 const createAsignacion = async (req, res) => {
-  const { cui_docente, id_curso, id_grado, id_seccion, anio } = req.body;
+  // Ahora recibimos un array 'cursos_ids' en lugar de un solo 'id_curso'
+  const { cui_docente, id_grado, id_seccion, anio, cursos_ids } = req.body;
   const usuario_agrego = req.user.username;
 
+  if (!cursos_ids || !Array.isArray(cursos_ids) || cursos_ids.length === 0) {
+    return res.status(400).json({ msg: 'Debe seleccionar al menos un curso.' });
+  }
+
+  const client = await pool.connect();
   try {
-    const query = `
-      INSERT INTO asignacion_curso (cui_docente, id_curso, id_grado, id_seccion, anio, estado_id, usuario_agrego)
-      VALUES ($1, $2, $3, $4, $5, 1, $6)
-      RETURNING *;
+    await client.query('BEGIN');
+
+    // 1. Insertar en la tabla principal (ahora sin el curso)
+    const asignacionQuery = `
+      INSERT INTO asignacion_docente (cui_docente, id_grado, id_seccion, anio, estado_id, usuario_agrego)
+      VALUES ($1, $2, $3, $4, 1, $5) -- <-- CAMBIO: Corregido a $5
+      RETURNING id_asignacion;
     `;
-    const { rows } = await pool.query(query, [cui_docente, id_curso, id_grado, id_seccion, anio, usuario_agrego]);
-    res.status(201).json(rows[0]);
+
+    // La llamada a la consulta también debe coincidir con 5 parámetros
+    const result = await client.query(asignacionQuery, [cui_docente, id_grado, id_seccion, anio, usuario_agrego]);
+    const newAsignacionId = result.rows[0].id_asignacion;
+
+    // 2. Insertar cada curso en la tabla detalle
+    const detalleQuery = `
+      INSERT INTO asignacion_cursos_detalle (id_asignacion, id_curso) VALUES ($1, $2);
+    `;
+    for (const id_curso of cursos_ids) {
+      await client.query(detalleQuery, [newAsignacionId, id_curso]);
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ msg: 'Asignación creada con éxito.' });
+
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error al crear asignación:', err.message);
     if (err.code === '23505') { // unique_violation
-      return res.status(400).json({ msg: 'Esta asignación ya existe.' });
+      return res.status(400).json({ msg: 'Esta asignación ya existe o contiene cursos duplicados.' });
     }
     res.status(500).json({ msg: 'Error en el servidor' });
+  } finally {
+    client.release();
   }
 };
 
@@ -53,7 +81,8 @@ const createAsignacion = async (req, res) => {
 const deleteAsignacion = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM asignacion_curso WHERE id_asignacion = $1', [id]);
+    // <-- CAMBIO: Usa el nuevo nombre de la tabla 'asignacion_docente'
+    const result = await pool.query('DELETE FROM asignacion_docente WHERE id_asignacion = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ msg: 'Asignación no encontrada.' });
     }

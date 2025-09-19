@@ -13,20 +13,18 @@ const AsignarCursos = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ESTADO PARA SABER SI ESTAMOS EDITANDO
-  const [editingId, setEditingId] = useState(null);
-
   // Estados del formulario
+  // <-- CAMBIO: Se modifica el estado para aceptar un array de cursos
   const initialFormState = {
     cui_docente: '',
     id_grado: '',
     id_seccion: '',
-    id_curso: '',
+    cursos_ids: [], // Ahora es un array para selección múltiple
     anio: new Date().getFullYear(),
   };
   const [form, setForm] = useState(initialFormState);
 
-  // Carga inicial de datos
+  // Carga inicial de datos (sin cambios)
   const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
     try {
@@ -50,7 +48,7 @@ const AsignarCursos = () => {
     fetchData();
   }, []);
 
-  // Cargar secciones y cursos cuando cambia el grado
+  // Cargar secciones y cursos cuando cambia el grado (sin cambios)
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (form.id_grado) {
@@ -64,54 +62,30 @@ const AsignarCursos = () => {
     }
   }, [form.id_grado]);
 
+  // <-- CAMBIO: Se crea un manejador específico para el multi-select
+  const handleCursosChange = (e) => {
+    const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+    setForm(prev => ({ ...prev, cursos_ids: selectedIds }));
+  };
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleEditClick = (asignacion) => {
-    setEditingId(asignacion.id_asignacion);
-    // Buscamos los IDs correctos para poblar el formulario
-    const docente = docentes.find(d => d.nombre_completo === asignacion.docente);
-    const grado = grados.find(g => g.nombre_grado === asignacion.grado);
-    // Necesitamos hacer esto en pasos para que los selects dependientes se carguen
-    setForm({
-      cui_docente: docente ? docente.cui_docente : '',
-      id_grado: grado ? grado.id_grado : '',
-      id_seccion: '', // Se cargará con el useEffect
-      id_curso: '',   // Se cargará con el useEffect
-      anio: asignacion.anio,
-    });
-  
-    // Pequeño truco para poblar los selects dependientes
-    setTimeout(() => {
-        const curso = cursos.find(c => c.nombre_curso === asignacion.curso);
-        const seccion = secciones.find(s => s.nombre_seccion === asignacion.seccion);
-        setForm(prev => ({
-            ...prev,
-            id_curso: curso ? curso.id_curso : '',
-            id_seccion: seccion ? seccion.id_seccion : '',
-        }));
-    }, 200);
-  };
-  
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setForm(initialFormState);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
-    const url = editingId 
-      ? `http://localhost:4000/api/asignaciones/${editingId}` 
-      : 'http://localhost:4000/api/asignaciones';
-    const method = editingId ? 'put' : 'post';
+    
+    // La lógica de edición es más compleja ahora, nos enfocamos en crear
+    // <-- CAMBIO: La URL y el método ahora son fijos para la creación
+    const url = 'http://localhost:4000/api/asignaciones';
+    const method = 'post';
 
     try {
       await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
-      alert(`Asignación ${editingId ? 'actualizada' : 'creada'} con éxito`);
-      handleCancelEdit(); // Limpiar formulario y modo edición
+      alert(`Asignación creada con éxito`);
+      setForm(initialFormState); // Limpiar formulario
       fetchData(); // Recargar todo
     } catch (error) {
       alert('Error: ' + (error.response?.data?.msg || 'Error inesperado'));
@@ -138,14 +112,14 @@ const AsignarCursos = () => {
       <div className="ac-container">
         <header className="ac-header">
           <h1>Asignación de Cursos</h1>
-          <p>Asigna grados, secciones y cursos a cada docente para el ciclo actual.</p>
+          <p>Asigna grados, secciones y múltiples cursos a cada docente para el ciclo actual.</p>
         </header>
         <button className="ac-btn-volver" onClick={() => navigate('/coordinator/dashboard')}>
           ⬅ Volver al Panel de Coordinación
         </button>
         <div className="ac-grid">
           <div className="ac-card">
-            <h2>{editingId ? 'Modificar Asignación' : 'Nueva Asignación'}</h2>
+            <h2>Nueva Asignación</h2>
             <form onSubmit={handleSubmit} className="ac-form">
               <select name="cui_docente" value={form.cui_docente} onChange={handleChange} required>
                 <option value="">-- Seleccione un Docente --</option>
@@ -159,14 +133,25 @@ const AsignarCursos = () => {
                 <option value="">-- Seleccione una Sección --</option>
                 {secciones.map(s => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>)}
               </select>
-              <select name="id_curso" value={form.id_curso} onChange={handleChange} required disabled={!form.id_grado}>
-                <option value="">-- Seleccione un Curso --</option>
+              
+              {/* <-- CAMBIO: Select de cursos ahora es múltiple --> */}
+              <label htmlFor="cursos_ids">Cursos (mantén Ctrl para varios)</label>
+              <select 
+                id="cursos_ids"
+                name="cursos_ids" 
+                value={form.cursos_ids} 
+                onChange={handleCursosChange} 
+                required 
+                multiple 
+                disabled={!form.id_grado}
+                size="5"
+              >
                 {cursos.map(c => <option key={c.id_curso} value={c.id_curso}>{c.nombre_curso}</option>)}
               </select>
+
               <input type="number" name="anio" value={form.anio} onChange={handleChange} required />
               <div className="ac-form-actions">
-                {editingId && <button type="button" className="ac-btn ac-btn--secondary" onClick={handleCancelEdit}>Cancelar</button>}
-                <button type="submit" className="ac-btn ac-btn--primary">{editingId ? 'Guardar Cambios' : 'Asignar Curso'}</button>
+                <button type="submit" className="ac-btn ac-btn--primary">Asignar Cursos</button>
               </div>
             </form>
           </div>
@@ -177,10 +162,12 @@ const AsignarCursos = () => {
                 <div key={a.id_asignacion} className="ac-list-item">
                   <div>
                     <strong className="ac-docente">{a.docente}</strong>
-                    <span className="ac-detalle">{a.grado} {a.seccion} - {a.curso} ({a.anio})</span>
+                    {/* <-- CAMBIO: Se muestra la lista de cursos --> */}
+                    <span className="ac-detalle">{a.grado} {a.seccion} - {a.cursos ? a.cursos.join(', ') : 'Sin cursos'} ({a.anio})</span>
                   </div>
                   <div className="ac-item-actions">
-                    <button className="ac-action-btn" onClick={() => handleEditClick(a)}>✏️</button>
+                    {/* La edición se deshabilita temporalmente por complejidad */}
+                    <button className="ac-action-btn" title="Editar - Próximamente" disabled>✏️</button>
                     <button className="ac-action-btn ac-delete-btn" onClick={() => handleDelete(a.id_asignacion)}>🗑️</button>
                   </div>
                 </div>
