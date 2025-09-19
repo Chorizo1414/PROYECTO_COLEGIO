@@ -6,8 +6,19 @@ const {
     getTeacherAssignments,
     getAssignmentData,
     createTask,
-    saveDeliveries
+    saveDeliveries,
+    getAllTeachers,
+    getTeacherByCui,
+    updateTeacher,
+    deactivateTeacher
 } = require('../controllers/teacherController');
+
+// GET /api/teachers
+router.get('/', authMiddleware, getAllTeachers);
+
+router.get('/:cui', authMiddleware, getTeacherByCui);
+router.put('/:cui', authMiddleware, updateTeacher);
+router.put('/deactivate/:cui', authMiddleware, deactivateTeacher);
 
 // Ruta para que el Coordinador registre un nuevo docente y su usuario
 router.post('/register', authMiddleware, registerTeacherAndUser);

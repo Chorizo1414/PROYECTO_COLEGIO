@@ -37,7 +37,7 @@ export default function CoordinatorDashboard() {
 
     // Opciones del menú con las rutas a los componentes que SÍ existen
     const menuOptions = [
-        { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar y modificar personal docente.', icon: '👩‍🏫', path: '/docentes/registro' },
+        { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar y modificar personal docente.', icon: '👩‍🏫', path: '/docentes' },
         { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignar padres.', icon: '📚', path: '/student-register' },
         { key: 'ver_secretaria', title: 'Panel de Secretaría', desc: 'Supervisar el estado de pagos.', icon: '📋', path: '/panel/secretaria' },
         { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver el control de tareas de los maestros.', icon: '👨‍🏫', path: '/teacher' },

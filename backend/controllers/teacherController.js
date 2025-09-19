@@ -1,6 +1,96 @@
 const pool = require("../config/db");
 const bcrypt = require('bcryptjs');
 
+// --- OBTENER UN DOCENTE POR SU CUI ---
+const getTeacherByCui = async (req, res) => {
+  const { cui } = req.params;
+  try {
+    const query = `
+      SELECT
+        d.cui_docente,
+        d.nombre_completo,
+        d.grado_guia,
+        d.email,
+        d.telefono,
+        d.estado_id,
+        u.username
+      FROM docentes d
+      LEFT JOIN usuarios u ON d.cui_docente = u.cui_docente
+      WHERE d.cui_docente = $1;
+    `;
+    const { rows } = await pool.query(query, [cui]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Docente no encontrado.' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(`Error al obtener docente ${cui}:`, err.message);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+// --- ACTUALIZAR UN DOCENTE ---
+const updateTeacher = async (req, res) => {
+  const { cui } = req.params;
+  const {
+    nombre_completo,
+    grado_guia,
+    email,
+    telefono,
+    estado_id,
+    username,
+    password // Opcional: solo se actualiza si se envía
+  } = req.body;
+  const usuario_modifico = req.user.username;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Actualizar la tabla de docentes
+    const docenteQuery = `
+      UPDATE docentes SET
+        nombre_completo = $1,
+        grado_guia = $2,
+        email = $3,
+        telefono = $4,
+        estado_id = $5,
+        usuario_modifico = $6,
+        fecha_modifico = NOW()
+      WHERE cui_docente = $7
+    `;
+    await client.query(docenteQuery, [nombre_completo, grado_guia || null, email || null, telefono || null, estado_id, usuario_modifico, cui]);
+
+    // 2. Actualizar la tabla de usuarios (con o sin contraseña)
+    if (password && password.trim() !== '') {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await client.query(
+        `UPDATE usuarios SET username = $1, password = $2, estado_id = $3, usuario_modifico = $4, fecha_modifico = NOW() WHERE cui_docente = $5`,
+        [username, hashedPassword, estado_id, usuario_modifico, cui]
+      );
+    } else {
+      await client.query(
+        `UPDATE usuarios SET username = $1, estado_id = $2, usuario_modifico = $3, fecha_modifico = NOW() WHERE cui_docente = $4`,
+        [username, estado_id, usuario_modifico, cui]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ msg: 'Docente actualizado con éxito.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(`Error al actualizar docente ${cui}:`, err.message);
+    if (err.code === '23505') {
+        return res.status(400).json({ msg: 'El nombre de usuario ya existe para otro docente.' });
+    }
+    res.status(500).send("Error en el servidor");
+  } finally {
+    client.release();
+  }
+};
+
 // --- REGISTRO COMPLETO DE DOCENTE Y USUARIO ---
 const registerTeacherAndUser = async (req, res) => {
   const {
@@ -132,11 +222,71 @@ const saveDeliveries = async (req, res) => {
     }
 }
 
+// --- OBTENER TODOS LOS DOCENTES ---
+const getAllTeachers = async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        d.cui_docente,
+        d.nombre_completo,
+        d.email,
+        d.telefono,
+        u.username,
+        d.estado_id
+      FROM docentes d
+      LEFT JOIN usuarios u ON d.cui_docente = u.cui_docente
+      ORDER BY d.nombre_completo;
+    `;
+    const { rows } = await pool.query(query);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error al listar los docentes:', err.message);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+// --- DAR DE BAJA A UN DOCENTE (SOFT DELETE) ---
+const deactivateTeacher = async (req, res) => {
+  const { cui } = req.params;
+  const usuario_modifico = req.user.username;
+  const INACTIVO_ESTADO_ID = 2; // Asumimos que el ID para 'Inactivo' es 2
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Poner como inactivo en la tabla 'docentes'
+    await client.query(
+      `UPDATE docentes SET estado_id = $1, usuario_modifico = $2, fecha_modifico = NOW() WHERE cui_docente = $3`,
+      [INACTIVO_ESTADO_ID, usuario_modifico, cui]
+    );
+
+    // 2. Poner como inactivo en la tabla 'usuarios' para bloquear el acceso
+    await client.query(
+      `UPDATE usuarios SET estado_id = $1, usuario_modifico = $2, fecha_modifico = NOW() WHERE cui_docente = $3`,
+      [INACTIVO_ESTADO_ID, usuario_modifico, cui]
+    );
+
+    await client.query('COMMIT');
+    res.json({ msg: 'Docente dado de baja con éxito.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(`Error al dar de baja al docente ${cui}:`, err.message);
+    res.status(500).send("Error en el servidor");
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   registerTeacherAndUser,
   getTeacherAssignments,
   getAssignmentData,
   createTask,
   saveDeliveries,
+  getAllTeachers, 
+  getTeacherByCui, 
+  updateTeacher,
+  deactivateTeacher
 };
 
