@@ -1,11 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const { createTeacher } = require('../controllers/teacherController');
+const { 
+    registerTeacherAndUser,
+    getTeacherAssignments,
+    getAssignmentData,
+    createTask,
+    saveDeliveries
+} = require('../controllers/teacherController');
 
-// POST /api/teachers -> Crear un nuevo docente (ruta protegida)
-router.post('/', authMiddleware, createTeacher);
+// Ruta para que el Coordinador registre un nuevo docente y su usuario
+router.post('/register', authMiddleware, registerTeacherAndUser);
 
-// Aquí podrías agregar más rutas (GET, PUT, etc.) en el futuro
+// --- Rutas para el Panel del Docente (se mantienen igual) ---
+router.get('/assignments', authMiddleware, getTeacherAssignments);
+router.get('/assignment-data/:assignmentId', authMiddleware, getAssignmentData);
+router.post('/tasks', authMiddleware, createTask);
+router.post('/deliveries', authMiddleware, saveDeliveries);
 
 module.exports = router;
+
