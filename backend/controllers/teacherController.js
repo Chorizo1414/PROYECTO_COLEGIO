@@ -148,10 +148,13 @@ const registerTeacherAndUser = async (req, res) => {
 // --- OBTENER ASIGNACIONES (Función existente) ---
 const getTeacherAssignments = async (req, res) => {
   try {
-    const cui_docente = req.user.cui_docente;
-    if (!cui_docente) {
-      return res.status(403).json({ msg: "Acceso denegado. Usuario no es un docente." });
+    // AHORA: Obtenemos el CUI de los parámetros de la URL
+    const { cui } = req.params;
+
+    if (!cui) {
+      return res.status(400).json({ msg: "No se proporcionó el CUI del docente." });
     }
+
     const query = `
       SELECT ac.id_asignacion, c.nombre_curso, g.nombre_grado, s.nombre_seccion
       FROM asignacion_curso ac
@@ -160,7 +163,7 @@ const getTeacherAssignments = async (req, res) => {
       JOIN secciones s ON ac.id_seccion = s.id_seccion
       WHERE ac.cui_docente = $1 ORDER BY g.nombre_grado, c.nombre_curso;
     `;
-    const { rows } = await pool.query(query, [cui_docente]);
+    const { rows } = await pool.query(query, [cui]);
     res.json(rows);
   } catch (err) {
     console.error(err.message);
@@ -278,6 +281,26 @@ const deactivateTeacher = async (req, res) => {
   }
 };
 
+// --- OBTENER SOLO DOCENTES CON CURSOS ASIGNADOS ---
+const getAssignedTeachers = async (req, res) => {
+  try {
+    const query = `
+      SELECT DISTINCT
+        d.cui_docente,
+        d.nombre_completo
+      FROM docentes d
+      JOIN asignacion_curso ac ON d.cui_docente = ac.cui_docente
+      WHERE d.estado_id = 1
+      ORDER BY d.nombre_completo;
+    `;
+    const { rows } = await pool.query(query);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error al obtener docentes asignados:', err.message);
+    res.status(500).json({ msg: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   registerTeacherAndUser,
   getTeacherAssignments,
@@ -287,6 +310,7 @@ module.exports = {
   getAllTeachers, 
   getTeacherByCui, 
   updateTeacher,
-  deactivateTeacher
+  deactivateTeacher,
+  getAssignedTeachers
 };
 

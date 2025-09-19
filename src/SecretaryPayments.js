@@ -3,61 +3,64 @@ import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import "./css/SecretaryPayments.css";
 import logoColegio from "./assets/logo-colegio.png";
-import { auth } from './auth'; // Importamos auth para obtener el token
+import { auth } from './auth';
 
-// Constantes para los filtros que ya tenías
-const GRADES = [
-  "Todos los grados", "Primero Primaria", "Segundo Primaria", "Tercero Primaria", 
-  "Cuarto Primaria", "Quinto Primaria", "Sexto Primaria"
-];
-const MONTHS = [
-  "Todos los meses", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre"
-];
+// Ya no necesitamos la lista fija de GRADES ni MONTHS aquí
 
 export default function SecretaryPayments() {
   const navigate = useNavigate();
 
   // --- ESTADOS ---
-  const [students, setStudents] = useState([]); // Estado para guardar los alumnos de la API
-  const [loading, setLoading] = useState(true); // Estado para mostrar un mensaje de carga
-  const [error, setError] = useState(null);     // Estado para manejar errores de la API
+  const [students, setStudents] = useState([]);
+  const [grados, setGrados] = useState([]); // 1. NUEVO ESTADO PARA LOS GRADOS DEL FILTRO
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  // Estados para los filtros y el modal (los que ya tenías)
+  
+  // Estados para los filtros y el modal
   const [grade, setGrade] = useState("Todos los grados");
-  const [month, setMonth] = useState("Todos los meses");
   const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState(null); // Guarda el CUI del alumno que se está editando
-  const [message, setMessage] = useState("");   // Guarda el texto del mensaje en el modal
+  const [editing, setEditing] = useState(null);
+  const [message, setMessage] = useState("");
 
   // --- EFECTO PARA CARGAR DATOS DE LA API ---
   useEffect(() => {
-    const fetchStudents = async () => {
-      const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
-      if (!token) {
-        alert("Sesión no válida. Por favor, inicie sesión de nuevo.");
-        return navigate('/login');
-      }
+    const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
+    if (!token) {
+      alert("Sesión no válida. Por favor, inicie sesión de nuevo.");
+      return navigate('/login');
+    }
 
+    const fetchData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:4000/api/students/details', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setStudents(response.data);
+        
+        // Usamos Promise.all para cargar todo en paralelo
+        const [studentsResponse, gradesResponse] = await Promise.all([
+          axios.get('http://localhost:4000/api/students/details', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:4000/api/grades', { // 2. LLAMADA A LA API PARA OBTENER LOS GRADOS
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+        
+        setStudents(studentsResponse.data);
+        setGrados(gradesResponse.data); // Guardamos los grados en el nuevo estado
+        
       } catch (err) {
-        setError('Error al cargar alumnos.');
+        setError('Error al cargar los datos.');
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStudents();
-  }, [navigate, refreshKey]);// Se ejecuta solo una vez cuando el componente se monta
+    fetchData();
+  }, [navigate, refreshKey]);
 
-  // --- LÓGICA DE FILTRADO Y TOTALES ---
+  // --- LÓGICA DE FILTRADO Y TOTALES (sin cambios) ---
   const filtered = useMemo(() => {
     return students.filter((s) => {
       const byGrade = grade === "Todos los grados" ? true : s.nombre_grado === grade;
@@ -73,34 +76,26 @@ export default function SecretaryPayments() {
     return { total, pendientes, alDia };
   }, [students]);
 
-  // --- FUNCIONES DE ACCIÓN ---
+  // --- FUNCIONES DE ACCIÓN (sin cambios) ---
   const markAsSolvent = async (cui_estudiante) => {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    
     if (!window.confirm(`¿Deseas marcar como solvente al alumno para el período ${currentMonth}?`)) {
       return;
     }
-    
     const token = localStorage.getItem('accessToken');
     try {
       await axios.post('http://localhost:4000/api/students/financial-status', 
         { cui_estudiante, periodo: currentMonth },
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      
       alert('¡Alumno marcado como solvente!');
-      
-      // En lugar de actualizar el estado local, cambiamos 'refresh' para
-      // que el useEffect se vuelva a ejecutar y traiga los datos actualizados.
       setRefreshKey(oldKey => oldKey + 1);
-
     } catch (err) {
       const errorMessage = err.response?.data?.msg || err.message;
       alert('Error al actualizar: ' + errorMessage);
     }
   };
-
-  // Funciones para el modal que ya tenías
+  
   const openEditor = (student) => {
     setEditing(student.cui_estudiante);
     setMessage(`Estimado padre de familia de ${student.nombre_completo}, le recordamos que el pago está pendiente.`);
@@ -111,14 +106,13 @@ export default function SecretaryPayments() {
     closeEditor();
   };
   
-  // --- RENDERIZADO ---
   if (loading) return <div className="sp-page">Cargando alumnos...</div>;
   if (error) return <div className="sp-page" style={{color: 'red'}}>{error}</div>;
 
   return (
     <div className="sp-page">
       <header className="sp-header">
-        <button onClick={() => navigate('/panel-roles')} className="sp-back-button">
+        <button onClick={() => navigate('/coordinator/dashboard')} className="sp-back-button">
           ‹ Volver al Panel
         </button>
         <img src={logoColegio} alt="Colegio Mixto El Jardín" className="sp-logo" />
@@ -149,11 +143,10 @@ export default function SecretaryPayments() {
         <div className="sp-controlsHeader">
             <h2 className="sp-sectionTitle">Control de Estudiantes</h2>
             <div className="sp-filters">
+                {/* 3. SELECT DINÁMICO QUE USA EL ESTADO 'grados' */}
                 <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <select value={month} onChange={(e) => setMonth(e.target.value)}>
-                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    <option value="Todos los grados">Todos los grados</option>
+                    {grados.map(g => <option key={g.id_grado} value={g.nombre_grado}>{g.nombre_grado}</option>)}
                 </select>
                 <input 
                     type="search" 

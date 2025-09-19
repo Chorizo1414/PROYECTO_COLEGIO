@@ -1,90 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
-
-// --- Estilos CSS (embebidos para evitar problemas de importación) ---
-const TeacherDashboardStyles = () => (
-  <style>{`
-    :root{
-      --azul:#014BA0; --madera:#783714; --amarillo:#F7D547; --rojo:#FF3936;
-      --verde:#008311; --blanco:#FFFFFF; --grisC:#E0E0E0; --gris:#333333;
-      --bg:#f1f5f9; --ink:#0F172A; --muted:#64748B;
-    }
-    *{ box-sizing:border-box; }
-    .tdb-page{ background:#f8fafc; min-height:100vh; font-family: sans-serif; }
-    .tdb-header{
-      background: linear-gradient(135deg, var(--azul) 0%, var(--verde) 100%);
-      color:var(--blanco); padding:24px 20px 0; position:sticky; top:0; z-index:10;
-      box-shadow: 0 8px 20px rgba(0,0,0,.06);
-    }
-    .tdb-header-inner{ display:flex; align-items:center; gap:14px; margin:0 auto; max-width:1200px; }
-    .tdb-logo{ height:60px; width: 60px; object-fit:contain;flex-shrink: 0; background: white; border-radius: 50%; padding: 5px; }
-    .tdb-titleBlock h1{ margin:0; font-size:20px; letter-spacing:.5px; }
-    .tdb-titleBlock p{ margin:2px 0 0; opacity:.9; }
-    .tdb-headActions{ max-width:1200px; margin:12px auto 10px; display:flex; gap:8px; flex-wrap:wrap; }
-    .tdb-btn{
-      border:none; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;
-      background:#e5e7eb; color:#111827; transition: all 0.2s ease;
-    }
-    .tdb-btn:hover { transform: translateY(-2px); filter: brightness(0.95); }
-    .tdb-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
-    .tdb-btn--primary{ background:#0ea5e9; color:white; }
-    .tdb-btn--secondary{ background:#334155; color:white; }
-    .tdb-btn--ghost{ background:rgba(255,255,255,.2); color:white; border:1px solid rgba(255,255,255,.35); }
-    .tdb-btn--success{ background:#16a34a; color:white; }
-    .tdb-main{ max-width:1200px; margin:18px auto; padding:0 16px 32px; }
-    .tdb-section{ display:grid; gap:14px; }
-    .tdb-card{
-      background:white; border-radius:16px; padding:16px; box-shadow:0 3px 12px rgba(2,6,23,.06);
-      border:2px solid #e5e7eb;
-    }
-    .tdb-card--flat{ box-shadow:none; border:2px dashed #e5e7eb; }
-    .tdb-cardTitle{ font-weight:800; color:var(--ink); margin-bottom:8px; }
-    .tdb-select, .tdb-input, .tdb-textarea{
-      width:100%; border:2px solid #e5e7eb; border-radius:10px; padding:10px 12px; font-size:14px;
-    }
-    .tdb-input:focus, .tdb-select:focus, .tdb-textarea:focus{ outline:none; border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,.2); }
-    .tdb-followToolbar{ display:grid; grid-template-columns: 1fr; gap:12px; align-items:end; margin-bottom:12px; }
-    .tdb-followGroup{ display:grid; gap:6px; }
-    .tdb-label{ font-size:12px; color:#334155; font-weight:700; }
-    .tdb-trackWrap{ overflow:auto; border:2px solid #e5e7eb; border-radius:12px; }
-    .tdb-matrix{ width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; }
-    .tdb-matrix th, .tdb-matrix td{
-      background:white; border-bottom:1px solid #e5e7eb; padding:10px 12px; vertical-align:middle;
-      white-space: nowrap;
-    }
-    .tdb-matrix thead th{ position:sticky; top:0; background:#f8fafc; z-index:1; }
-    .sticky-left{ position:sticky; left:0; background:#f8fafc !important; z-index:2; }
-    td.sticky-left { background: white !important; }
-    tr:hover td.sticky-left { background: #f9fafb !important; }
-    .td-center{ text-align:center; }
-    .th-col{ display:grid; gap:6px; min-width:180px; }
-    .th-title{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 180px; }
-    .chk{ width:18px; height:18px; }
-    .tdb-actionsRow{ display:flex; gap:10px; justify-content:flex-end; margin-top:10px; }
-    .tdb-modal{
-      position:fixed; inset:0; background:rgba(2,6,23,.45);
-      display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;
-    }
-    .tdb-modalCard{
-      background:white; width:min(520px, 96vw); max-height:90vh;
-      border-radius:18px; border:2px solid #e5e7eb; box-shadow:0 10px 50px rgba(2,6,23,.3);
-      display:flex; flex-direction:column;
-    }
-    .tdb-modalHeader{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:14px 16px; border-bottom:2px solid #e5e7eb; background:#f8fafc; border-top-left-radius:18px; border-top-right-radius:18px;
-    }
-    .tdb-x{ border:none; background:#e5e7eb; border-radius:10px; padding:6px 10px; cursor:pointer; font-weight:800; }
-    .tdb-form{ display:grid; gap:14px; padding:16px; }
-    .tdb-formCol{ display:grid; gap:6px; }
-    .tdb-modalActions{
-      display:flex; justify-content:flex-end; gap:10px;
-      padding:10px 16px 16px; border-top:2px solid #e5e7eb; background:#fff; border-bottom-left-radius:18px; border-bottom-right-radius:18px;
-    }
-  `}</style>
-);
+import './css/TeacherDashboard.css';
 
 const Loader = ({ text = "Cargando..." }) => (
   <div className="tdb-card tdb-card--flat" style={{ textAlign: "center", padding: "40px" }}>
@@ -149,6 +67,8 @@ const TaskModal = ({ assignmentId, onClose, onSave }) => {
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
+  const { cui } = useParams(); // Obtener el CUI de la URL
+
   const [assignments, setAssignments] = useState([]);
   const [currentAssignmentId, setCurrentAssignmentId] = useState("");
   const [students, setStudents] = useState([]);
@@ -158,14 +78,23 @@ export default function TeacherDashboard() {
   const [error, setError] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const logoUrl = "https://i.imgur.com/xCE6PxC.png";
+  
+  const loggedInUser = auth.getUser();
+  const isCoordinatorView = !!cui;
+  const targetCui = cui || loggedInUser?.cui_docente;
 
   useEffect(() => {
     const fetchAssignments = async () => {
+      if (!targetCui) return;
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:4000/api/teachers/assignments", { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } });
         setAssignments(res.data);
-        if (res.data.length > 0) setCurrentAssignmentId(res.data[0].id_asignacion);
+        if (res.data.length > 0) {
+          setCurrentAssignmentId(res.data[0].id_asignacion);
+        } else {
+          setCurrentAssignmentId(""); // Limpiar si no hay asignaciones
+        }
       } catch (err) {
         console.error("Error fetching assignments", err);
         setError("No se pudieron cargar las asignaciones del docente.");
@@ -174,10 +103,15 @@ export default function TeacherDashboard() {
       }
     };
     fetchAssignments();
-  }, []);
+  }, [targetCui]);
 
   const fetchAssignmentData = useCallback(async () => {
-    if (!currentAssignmentId) return;
+    if (!currentAssignmentId) {
+        setStudents([]);
+        setTasks([]);
+        setDeliveries({});
+        return;
+    }
     setLoading(p => ({ ...p, data: true }));
     setError(null);
     try {
@@ -197,6 +131,7 @@ export default function TeacherDashboard() {
   useEffect(() => { fetchAssignmentData(); }, [fetchAssignmentData]);
 
   const handleCheckChange = (studentId, taskId) => {
+    if(isCoordinatorView) return; // Bloquear cambios si es vista de coordinador
     setDeliveries(prev => {
       const studentDeliveries = { ...(prev[studentId] || {}) };
       studentDeliveries[taskId] = !studentDeliveries[taskId];
@@ -211,9 +146,7 @@ export default function TeacherDashboard() {
               payload.push({ cui_estudiante, id_tarea, entregado: !!deliveries[cui_estudiante][id_tarea] });
           });
       });
-
       if (payload.length === 0) return alert("No hay cambios para guardar.");
-      
       try {
         const token = localStorage.getItem("accessToken");
         await axios.post("http://localhost:4000/api/teachers/deliveries", { deliveries: payload }, { headers: { Authorization: `Bearer ${token}` } });
@@ -230,10 +163,10 @@ export default function TeacherDashboard() {
   }
 
   const currentAssignment = assignments.find(a => a.id_asignacion === Number(currentAssignmentId));
+  const backPath = isCoordinatorView ? '/seleccionar-docente' : '/panel';
 
   return (
     <div className="tdb-page">
-      <TeacherDashboardStyles />
       {showTaskModal && <TaskModal assignmentId={currentAssignmentId} onClose={() => setShowTaskModal(false)} onSave={handleTaskSaved} />}
       
       <header className="tdb-header">
@@ -245,8 +178,8 @@ export default function TeacherDashboard() {
           </div>
         </div>
         <div className="tdb-headActions">
-           <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate("/panel")}>⬅ Volver</button>
-           <button className="tdb-btn tdb-btn--ghost" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva tarea</button>
+           <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate(backPath)}>⬅ Volver</button>
+           {!isCoordinatorView && <button className="tdb-btn tdb-btn--ghost" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva tarea</button>}
         </div>
       </header>
       
@@ -293,7 +226,7 @@ export default function TeacherDashboard() {
                             <td className="sticky-left"><span>{s.apellidos}, {s.nombres}</span></td>
                             {tasks.map((t) => (
                               <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="td-center">
-                                <input className="chk" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} aria-label={`${s.nombres} completó ${t.titulo}`} />
+                                <input className="chk" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} aria-label={`${s.nombres} completó ${t.titulo}`} disabled={isCoordinatorView} />
                               </td>
                             ))}
                           </tr>
@@ -301,9 +234,11 @@ export default function TeacherDashboard() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="tdb-actionsRow">
-                    <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>Guardar cambios</button>
-                  </div>
+                  {!isCoordinatorView && (
+                    <div className="tdb-actionsRow">
+                      <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>Guardar cambios</button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
