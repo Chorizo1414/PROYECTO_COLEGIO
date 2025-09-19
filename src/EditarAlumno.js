@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from 'axios';
-import "./css/EditarAlumno.css"; // Nuevo CSS
+import "./css/EditarAlumno.css";
+import { auth } from "./auth"; // <-- Importamos auth
 
 export default function EditarAlumno() {
   const { cui } = useParams();
   const navigate = useNavigate();
+
+  // <-- CAMBIO: Verificamos si el rol es Coordinador
+  const role = auth.getRole();
+  const isCoordinator = role === 2;
 
   const [form, setForm] = useState({
     nombres: "",
@@ -38,11 +43,9 @@ export default function EditarAlumno() {
         setPadres(padresRes.data);
         
         const alumnoData = alumnoRes.data;
-        // Formatear la fecha para el input type="date"
         alumnoData.fecha_nacimiento = alumnoData.fecha_nacimiento.split('T')[0];
         setForm(alumnoData);
         
-        // Si el alumno ya tiene un grado, cargar sus secciones
         if (alumnoData.id_grado) {
           const seccionesRes = await axios.get(`http://localhost:4000/api/grades/${alumnoData.id_grado}/sections`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -62,7 +65,7 @@ export default function EditarAlumno() {
 
   const handleGradoChange = async (e) => {
     const gradoId = e.target.value;
-    setForm(f => ({ ...f, id_grado: gradoId, id_seccion: "" })); // Resetear sección
+    setForm(f => ({ ...f, id_grado: gradoId, id_seccion: "" }));
     if (gradoId) {
       const token = localStorage.getItem('accessToken');
       const res = await axios.get(`http://localhost:4000/api/grades/${gradoId}/sections`, {
@@ -118,19 +121,22 @@ export default function EditarAlumno() {
             {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
           </select>
 
-          <label className="aedit-label" htmlFor="id_seccion">Sección</label>
-          <select id="id_seccion" name="id_seccion" className="aedit-input" value={form.id_seccion} onChange={onChange} disabled={!form.id_grado}>
-            <option value="">-- Seleccione una Sección --</option>
-            {secciones.map(s => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>)}
-          </select>
+          {/* <-- CAMBIO: El selector de sección solo se muestra si es Coordinador --> */}
+          {isCoordinator && (
+            <>
+              <label className="aedit-label" htmlFor="id_seccion">Sección</label>
+              <select id="id_seccion" name="id_seccion" className="aedit-input" value={form.id_seccion} onChange={onChange} disabled={!form.id_grado}>
+                <option value="">-- Seleccione una Sección --</option>
+                {secciones.map(s => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>)}
+              </select>
+            </>
+          )}
 
           <label className="aedit-label" htmlFor="cui_padre">Padre / Encargado Principal</label>
           <select id="cui_padre" name="cui_padre" className="aedit-input" value={form.cui_padre} onChange={onChange} required>
             <option value="">-- Seleccione un Encargado --</option>
             {padres.map(p => <option key={p.cui_padre} value={p.cui_padre}>{p.nombre_completo}</option>)}
           </select>
-
-          {/* Puedes añadir más campos como género, estado, etc. si es necesario */}
 
           <div className="aedit-actions">
             <button className="aedit-save" type="submit">Guardar Cambios</button>

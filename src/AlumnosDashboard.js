@@ -6,13 +6,15 @@ import './css/AlumnosDashboard.css';
 
 export default function AlumnosDashboard() {
   const [alumnos, setAlumnos] = useState([]);
-  const [secciones, setSecciones] = useState([]); // <-- NUEVO: Estado para guardar todas las secciones
+  const [secciones, setSecciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const role = auth.getRole();
   const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
+  // <-- CAMBIO: Verificamos si el rol es Coordinador (ID 2)
+  const isCoordinator = role === 2;
 
   const fetchData = async () => {
     setLoading(true);
@@ -20,15 +22,12 @@ export default function AlumnosDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       const headers = { Authorization: `Bearer ${token}` };
-
-      // <-- CAMBIO: Hacemos dos peticiones al mismo tiempo
       const [alumnosRes, seccionesRes] = await Promise.all([
         axios.get('http://localhost:4000/api/students', { headers }),
-        axios.get('http://localhost:4000/api/grades/sections/all', { headers }) // <-- Petición a la nueva ruta
+        axios.get('http://localhost:4000/api/grades/sections/all', { headers })
       ]);
-
       setAlumnos(alumnosRes.data);
-      setSecciones(seccionesRes.data); // <-- Guardamos las secciones
+      setSecciones(seccionesRes.data);
     } catch (err) {
       setError('No se pudieron cargar los datos.');
       console.error('Error fetching data', err);
@@ -41,33 +40,22 @@ export default function AlumnosDashboard() {
     fetchData();
   }, []);
 
-  // <-- NUEVO: Función para manejar el cambio de sección
   const handleSectionChange = async (cui_estudiante, new_id_seccion) => {
-    // Buscamos al alumno en el estado actual para tener todos sus datos
     const alumnoToUpdate = alumnos.find(a => a.cui_estudiante === cui_estudiante);
     if (!alumnoToUpdate) return;
-    
-    // Creamos el objeto con los datos actualizados
     const updatedData = { ...alumnoToUpdate, id_seccion: new_id_seccion };
-
-    // Actualizamos el estado localmente para una respuesta visual inmediata
     setAlumnos(alumnos.map(a => a.cui_estudiante === cui_estudiante ? { ...a, id_seccion: new_id_seccion, nombre_seccion: secciones.find(s => s.id_seccion == new_id_seccion)?.nombre_seccion } : a));
-
     try {
       const token = localStorage.getItem('accessToken');
-      // Usamos la ruta PUT que ya existe para actualizar estudiantes
       await axios.put(`http://localhost:4000/api/students/${cui_estudiante}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Opcional: mostrar un mensaje de éxito
     } catch (error) {
       alert('Error al guardar la sección.');
-      // Si falla, revertimos el cambio en la UI
       fetchData();
     }
   };
 
-  // El resto de las funciones (deactivate, activate) no cambian
   const handleDeactivate = async (cui, nombre) => {
     if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}?`)) {
       try {
@@ -104,7 +92,6 @@ export default function AlumnosDashboard() {
           <h1>Gestión de Alumnos</h1>
           <p>Administra a los estudiantes inscritos</p>
         </header>
-
         <div className="ad-actions-bar">
           <button className="ad-btn ad-btn--secondary" onClick={() => navigate(backPath)}>
             ⬅ Volver al Panel
@@ -113,7 +100,6 @@ export default function AlumnosDashboard() {
             + Inscribir Nuevo Alumno
           </button>
         </div>
-
         <main className="ad-grid">
           {alumnos.map((alumno) => (
             <article key={alumno.cui_estudiante} className="ad-card">
@@ -124,41 +110,47 @@ export default function AlumnosDashboard() {
                   <strong>Grado:</strong> {alumno.nombre_grado || 'No asignado'} <br />
                   <strong>Encargado:</strong> {alumno.nombre_padre || 'No asignado'}
                 </p>
-
-                {/* <-- NUEVO: Selector de sección --> */}
-                <div className="ad-section-selector">
-                  <label htmlFor={`seccion-${alumno.cui_estudiante}`}>Sección:</label>
-                  <select
-                    id={`seccion-${alumno.cui_estudiante}`}
-                    value={alumno.id_seccion || ''}
-                    onChange={(e) => handleSectionChange(alumno.cui_estudiante, e.target.value)}
-                    disabled={!alumno.id_grado} // Se deshabilita si no tiene grado
-                  >
-                    <option value="">-- Asignar --</option>
-                    {/* Filtramos las secciones que corresponden al grado del alumno */}
-                    {secciones
-                      .filter(s => s.id_grado === alumno.id_grado)
-                      .map(s => (
-                        <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>
-                      ))
-                    }
-                  </select>
-                </div>
-
+                
+                {/* <-- CAMBIO: El selector de sección solo se muestra si es Coordinador --> */}
+                {isCoordinator && (
+                  <div className="ad-section-selector">
+                    <label htmlFor={`seccion-${alumno.cui_estudiante}`}>Sección:</label>
+                    <select
+                      id={`seccion-${alumno.cui_estudiante}`}
+                      value={alumno.id_seccion || ''}
+                      onChange={(e) => handleSectionChange(alumno.cui_estudiante, e.target.value)}
+                      disabled={!alumno.id_grado}
+                    >
+                      <option value="">-- Asignar --</option>
+                      {secciones
+                        .filter(s => s.id_grado === alumno.id_grado)
+                        .map(s => (
+                          <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
               </div>
               <div className={`ad-badge ${alumno.estado_id === 1 ? 'active' : 'inactive'}`}>
                 {alumno.estado_id === 1 ? 'Activo' : 'Inactivo'}
               </div>
               <div className="ad-card-actions">
                 <button className="ad-chip ad-chip-edit" onClick={() => navigate(`/alumnos/editar/${alumno.cui_estudiante}`)}>✏️ Modificar</button>
-                {alumno.estado_id === 1 ? (
-                  <button className="ad-chip ad-chip-delete" onClick={() => handleDeactivate(alumno.cui_estudiante, alumno.nombre_completo)}>
-                    🗑️ Dar de Baja
-                  </button>
-                ) : (
-                  <button className="ad-chip ad-chip-activate" onClick={() => handleActivate(alumno.cui_estudiante, alumno.nombre_completo)}>
-                    ⬆️ Dar de Alta
-                  </button>
+                
+                {/* <-- CAMBIO: Los botones de activar/desactivar solo se muestran si es Coordinador --> */}
+                {isCoordinator && (
+                  <>
+                    {alumno.estado_id === 1 ? (
+                      <button className="ad-chip ad-chip-delete" onClick={() => handleDeactivate(alumno.cui_estudiante, alumno.nombre_completo)}>
+                        🗑️ Dar de Baja
+                      </button>
+                    ) : (
+                      <button className="ad-chip ad-chip-activate" onClick={() => handleActivate(alumno.cui_estudiante, alumno.nombre_completo)}>
+                        ⬆️ Dar de Alta
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </article>
