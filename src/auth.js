@@ -1,40 +1,33 @@
-import { jwtDecode } from 'jwt-decode';
+// src/auth.js
 
-export const auth = {
-  // Al iniciar sesión, guardamos el token
-  login(token) {
-    localStorage.setItem("accessToken", token);
+const auth = {
+  login(token, user) {
+    localStorage.setItem('accessToken', token);
+    // --- CORRECCIÓN CLAVE AQUÍ ---
+    // Guardamos el objeto 'user' completo como una cadena de texto JSON.
+    // Antes, intentaba guardar [object Object], lo que no funciona.
+    localStorage.setItem('user', JSON.stringify(user)); 
   },
 
-  // Al cerrar sesión, limpiamos todo
   logout() {
-    localStorage.removeItem("accessToken");
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
   },
 
-  // Revisa si hay un token válido
   isLogged() {
-    const token = localStorage.getItem("accessToken");
-    return !!token;
+    return !!localStorage.getItem('accessToken');
   },
 
-  // Decodifica el token para obtener la info del usuario
   getUser() {
-    try {
-      const token = localStorage.getItem("accessToken");
-      if (token) {
-        const decoded = jwtDecode(token);
-        return decoded.user; // Devuelve el objeto { id, role }
-      }
-      return null;
-    } catch (e) {
-      console.error("Error al decodificar el token", e);
-      return null;
-    }
+    // Leemos la cadena de texto y la convertimos de nuevo a un objeto.
+    const userString = localStorage.getItem('user');
+    return userString ? JSON.parse(userString) : null;
   },
 
-  // Obtiene solo el ROL del usuario
   getRole() {
     const user = this.getUser();
     return user ? user.role : null;
   }
 };
+
+export { auth };

@@ -4,16 +4,17 @@ import axios from "axios";
 import { auth } from "./auth";
 import './css/TeacherDashboard.css';
 
+// --- Componentes Internos (Loader y TaskModal no cambian) ---
 const Loader = ({ text = "Cargando..." }) => (
-  <div className="tdb-card tdb-card--flat" style={{ textAlign: "center", padding: "40px" }}>
-    <div style={{ marginBottom: "12px" }}>{text}</div>
-    <div style={{
-      border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%',
-      width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto'
-    }}></div>
-  </div>
+    <div className="tdb-card tdb-card--flat" style={{ textAlign: "center", padding: "40px" }}>
+      <div style={{ marginBottom: "12px" }}>{text}</div>
+      <div style={{
+        border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%',
+        width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto'
+      }}></div>
+    </div>
 );
-
+  
 const TaskModal = ({ assignmentId, onClose, onSave }) => {
     const [titulo, setTitulo] = useState('');
     const [fechaEntrega, setFechaEntrega] = useState('');
@@ -65,9 +66,11 @@ const TaskModal = ({ assignmentId, onClose, onSave }) => {
     );
 };
 
+
+// --- Componente Principal ---
 export default function TeacherDashboard() {
   const navigate = useNavigate();
-  const { cui } = useParams(); // Obtener el CUI de la URL
+  const { cui } = useParams();
 
   const [assignments, setAssignments] = useState([]);
   const [currentAssignmentId, setCurrentAssignmentId] = useState("");
@@ -77,40 +80,51 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState({ assignments: true, data: false });
   const [error, setError] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const logoUrl = "https://i.imgur.com/xCE6PxC.png";
+  const [teacherInfo, setTeacherInfo] = useState(null);
   
   const loggedInUser = auth.getUser();
   const isCoordinatorView = !!cui;
+  // --- CORRECCIÓN CLAVE AQUÍ ---
+  // Nos aseguramos de que siempre tengamos el CUI del docente correcto.
   const targetCui = cui || loggedInUser?.cui_docente;
+  const logoUrl = "https://i.imgur.com/xCE6PxC.png";
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      if (!targetCui) return;
+    const fetchData = async () => {
+      if (!targetCui) {
+        setError("No se pudo identificar al docente. Por favor, inicie sesión de nuevo.");
+        setLoading({ assignments: false, data: false });
+        return;
+      }
+      setLoading(p => ({ ...p, assignments: true }));
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } });
-        setAssignments(res.data);
-        if (res.data.length > 0) {
-          setCurrentAssignmentId(res.data[0].id_asignacion);
+        const [teacherRes, assignmentsRes] = await Promise.all([
+            axios.get(`http://localhost:4000/api/teachers/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+
+        setTeacherInfo(teacherRes.data);
+        setAssignments(assignmentsRes.data);
+        
+        if (assignmentsRes.data.length > 0) {
+          setCurrentAssignmentId(assignmentsRes.data[0].id_asignacion);
         } else {
-          setCurrentAssignmentId(""); // Limpiar si no hay asignaciones
+          setCurrentAssignmentId("");
         }
       } catch (err) {
-        console.error("Error fetching assignments", err);
-        setError("No se pudieron cargar las asignaciones del docente.");
+        console.error("Error fetching data:", err);
+        setError("No se pudieron cargar los datos del docente.");
       } finally {
         setLoading(p => ({ ...p, assignments: false }));
       }
     };
-    fetchAssignments();
+    fetchData();
   }, [targetCui]);
 
   const fetchAssignmentData = useCallback(async () => {
     if (!currentAssignmentId) {
-        setStudents([]);
-        setTasks([]);
-        setDeliveries({});
-        return;
+        setStudents([]); setTasks([]); setDeliveries({}); return;
     }
     setLoading(p => ({ ...p, data: true }));
     setError(null);
@@ -131,7 +145,7 @@ export default function TeacherDashboard() {
   useEffect(() => { fetchAssignmentData(); }, [fetchAssignmentData]);
 
   const handleCheckChange = (studentId, taskId) => {
-    if(isCoordinatorView) return; // Bloquear cambios si es vista de coordinador
+    if(isCoordinatorView) return;
     setDeliveries(prev => {
       const studentDeliveries = { ...(prev[studentId] || {}) };
       studentDeliveries[taskId] = !studentDeliveries[taskId];
@@ -140,30 +154,36 @@ export default function TeacherDashboard() {
   };
   
   const handleSaveDeliveries = async () => {
-      const payload = [];
-      Object.keys(deliveries).forEach(cui_estudiante => {
-          Object.keys(deliveries[cui_estudiante]).forEach(id_tarea => {
-              payload.push({ cui_estudiante, id_tarea, entregado: !!deliveries[cui_estudiante][id_tarea] });
-          });
-      });
-      if (payload.length === 0) return alert("No hay cambios para guardar.");
-      try {
-        const token = localStorage.getItem("accessToken");
-        await axios.post("http://localhost:4000/api/teachers/deliveries", { deliveries: payload }, { headers: { Authorization: `Bearer ${token}` } });
-        alert("¡Progreso guardado con éxito!");
-      } catch(err) {
-          console.error("Error saving deliveries", err);
-          alert("Hubo un error al guardar el progreso.");
-      }
+    const payload = [];
+    Object.keys(deliveries).forEach(cui_estudiante => {
+        Object.keys(deliveries[cui_estudiante]).forEach(id_tarea => {
+            payload.push({ cui_estudiante, id_tarea, entregado: !!deliveries[cui_estudiante][id_tarea] });
+        });
+    });
+    if (payload.length === 0) return alert("No hay cambios para guardar.");
+    try {
+      const token = localStorage.getItem("accessToken");
+      await axios.post("http://localhost:4000/api/teachers/deliveries", { deliveries: payload }, { headers: { Authorization: `Bearer ${token}` } });
+      alert("¡Progreso guardado con éxito!");
+    } catch(err) {
+        console.error("Error saving deliveries", err);
+        alert("Hubo un error al guardar el progreso.");
+    }
   };
 
   const handleTaskSaved = (newTask) => {
-      setTasks(prev => [newTask, ...prev].sort((a, b) => new Date(b.fecha_entrega) - new Date(a.fecha_entrega)));
-      setShowTaskModal(false);
-  }
+    setTasks(prev => [newTask, ...prev].sort((a, b) => new Date(b.fecha_entrega) - new Date(a.fecha_entrega)));
+    setShowTaskModal(false);
+  };
+
+  const logout = () => {
+      if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+          auth.logout();
+          navigate("/login", { replace: true });
+      }
+  };
 
   const currentAssignment = assignments.find(a => a.id_asignacion === Number(currentAssignmentId));
-  const backPath = isCoordinatorView ? '/seleccionar-docente' : '/panel';
 
   return (
     <div className="tdb-page">
@@ -173,12 +193,17 @@ export default function TeacherDashboard() {
         <div className="tdb-header-inner">
           <img src={logoUrl} alt="Colegio Mixto El Jardín" className="tdb-logo" />
           <div className="tdb-titleBlock">
-            <h1>COLEGIO MIXTO EL JARDÍN</h1>
-            <p>San Raymundo — Panel Docente</p>
+            <h1>Panel de Docente: {teacherInfo?.nombre_completo || 'Cargando...'}</h1>
+            <p>COLEGIO MIXTO EL JARDÍN</p>
           </div>
         </div>
         <div className="tdb-headActions">
-           <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate(backPath)}>⬅ Volver</button>
+           {/* --- BOTÓN "VOLVER" CAMBIADO POR "CERRAR SESIÓN" --- */}
+           {isCoordinatorView ? (
+             <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate('/seleccionar-docente')}>⬅ Volver a la Selección</button>
+           ) : (
+             <button className="tdb-btn tdb-btn--danger" onClick={logout}>🚪 Cerrar Sesión</button>
+           )}
            {!isCoordinatorView && <button className="tdb-btn tdb-btn--ghost" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva tarea</button>}
         </div>
       </header>
@@ -202,7 +227,6 @@ export default function TeacherDashboard() {
                   </select>
                 </div>
               </div>
-
               {loading.data ? <Loader text="Cargando alumnos y tareas..."/> : (
                 <>
                   <div className="tdb-trackWrap">
