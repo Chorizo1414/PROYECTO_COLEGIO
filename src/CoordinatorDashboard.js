@@ -2,13 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./auth"; 
 
-// Estilos integrados para evitar errores de importación
+// Estilos integrados para el diseño del panel
 const CoordinatorDashboardStyles = () => (
     <style>{`
       .cdb-page { min-height: 100vh; background: #f1f5f9; padding: 24px; font-family: sans-serif; }
       .cdb-container { max-width: 1200px; margin: 0 auto; }
       .cdb-header {
-        background: linear-gradient(135deg, var(--azul) 0%, #155e75 100%);
+        background: linear-gradient(135deg, #014BA0 0%, #155e75 100%);
         color: white; padding: 28px; border-radius: 24px; text-align: center;
         margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.1);
       }
@@ -26,22 +26,22 @@ const CoordinatorDashboardStyles = () => (
       .cdb-desc { font-size: 14px; color: #64748b; margin: 0; }
       .cdb-actions { display: flex; justify-content: center; margin-top: 32px; }
       .cdb-btn-logout {
-        background: var(--rojo); color: white; border: none; padding: 12px 24px;
+        background: #FF3936; color: white; border: none; padding: 12px 24px;
         border-radius: 12px; font-weight: 700; cursor: pointer;
       }
     `}</style>
 );
 
-
 export default function CoordinatorDashboard() {
     const navigate = useNavigate();
 
+    // Opciones del menú con las rutas a los componentes que SÍ existen
     const menuOptions = [
-        { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar, modificar y asignar cursos.', icon: '👩‍🏫', path: '/docentes/registro' },
-        { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignarles sección.', icon: '📚', path: '/student-register' },
-        { key: 'ver_secretaria', title: 'Panel de Secretaría', desc: 'Supervisar el estado de pagos de los alumnos.', icon: '📋', path: '/panel/secretaria' },
-        { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver la interfaz y el progreso de los maestros.', icon: '👨‍🏫', path: '/teacher' },
-        { key: 'asignar_cursos', title: 'Asignar Cursos', desc: 'Asignar materias y grados a los docentes.', icon: '✏️', path: '#' },
+        { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar y modificar personal docente.', icon: '👩‍🏫', path: '/docentes/registro' },
+        { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignar padres.', icon: '📚', path: '/student-register' },
+        { key: 'ver_secretaria', title: 'Panel de Secretaría', desc: 'Supervisar el estado de pagos.', icon: '📋', path: '/panel/secretaria' },
+        { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver el control de tareas de los maestros.', icon: '👨‍🏫', path: '/teacher' },
+        { key: 'asignar_cursos', title: 'Asignar Cursos', desc: 'Asignar materias a los docentes.', icon: '✏️', path: '#' },
         { key: 'reportes', title: 'Reportes Generales', desc: 'Ver estadísticas y reportes consolidados.', icon: '📊', path: '#' },
     ];
     
@@ -88,4 +88,3 @@ export default function CoordinatorDashboard() {
         </>
     );
 }
-

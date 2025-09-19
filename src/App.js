@@ -8,7 +8,7 @@ import ParentRegister from "./ParentRegister";
 import SecretaryPayments from "./SecretaryPayments";
 import TeacherDashboard from "./TeacherDashboard";
 import Docentes from "./Docentes";
-// importa tus otras pantallas si faltan...
+import CoordinatorDashboard from "./CoordinatorDashboard"; // <-- 1. IMPORTAR EL NUEVO PANEL
 
 export default function App() {
   return (
@@ -26,7 +26,17 @@ export default function App() {
           }
         />
 
-        {/* Módulo Docentes con subrutas (ej. /docentes/registro) */}
+        {/* 2. AÑADIR LA RUTA PARA EL PANEL DE COORDINACIÓN */}
+        <Route
+          path="/coordinator/dashboard"
+          element={
+            <ProtectedRoute>
+              <CoordinatorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- El resto de tus rutas --- */}
         <Route
           path="/docentes/*"
           element={
@@ -35,8 +45,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Rutas de registro */}
         <Route
           path="/student-register"
           element={
@@ -53,8 +61,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Ejemplos de rutas por rol */}
         <Route
           path="/panel/secretaria"
           element={
@@ -63,7 +69,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/teacher"
           element={
@@ -72,16 +77,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/panel/maestros"
-          element={
-            <ProtectedRoute>
-              <TeacherDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Catch-all */}
+        
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
