@@ -222,7 +222,9 @@ export default function TeacherDashboard() {
                   <label className="tdb-label">Curso Asignado</label>
                   <select className="tdb-select" value={currentAssignmentId} onChange={(e) => setCurrentAssignmentId(e.target.value)} disabled={assignments.length === 0}>
                     {assignments.length === 0 ? <option>No tienes cursos asignados</option> : assignments.map((a) => (
-                      <option key={a.id_asignacion} value={a.id_asignacion}>{a.nombre_grado} - {a.nombre_seccion} ({a.nombre_curso})</option>
+                      <option key={a.id_asignacion} value={a.id_asignacion}>
+                        {a.nombre_grado} - {a.nombre_seccion} ({a.cursos ? a.cursos.join(', ') : 'Cargando...'})
+                      </option>
                     ))}
                   </select>
                 </div>

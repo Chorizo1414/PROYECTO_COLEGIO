@@ -148,25 +148,35 @@ const registerTeacherAndUser = async (req, res) => {
 // --- OBTENER ASIGNACIONES (Función existente) ---
 const getTeacherAssignments = async (req, res) => {
   try {
-    // AHORA: Obtenemos el CUI de los parámetros de la URL
     const { cui } = req.params;
 
     if (!cui) {
       return res.status(400).json({ msg: "No se proporcionó el CUI del docente." });
     }
 
+    // <-- CAMBIO: La consulta ahora usa las nuevas tablas y agrupa los cursos
     const query = `
-      SELECT ac.id_asignacion, c.nombre_curso, g.nombre_grado, s.nombre_seccion
-      FROM asignacion_curso ac
-      JOIN cursos c ON ac.id_curso = c.id_curso
-      JOIN grados g ON ac.id_grado = g.id_grado
-      JOIN secciones s ON ac.id_seccion = s.id_seccion
-      WHERE ac.cui_docente = $1 ORDER BY g.nombre_grado, c.nombre_curso;
+      SELECT 
+        ad.id_asignacion,
+        g.nombre_grado,
+        s.nombre_seccion,
+        -- Usamos ARRAY_AGG para juntar todos los nombres de cursos en un solo campo
+        ARRAY_AGG(c.nombre_curso) as cursos
+      FROM asignacion_docente ad
+      JOIN grados g ON ad.id_grado = g.id_grado
+      JOIN secciones s ON ad.id_seccion = s.id_seccion
+      -- Unimos con la tabla detalle para obtener los cursos
+      LEFT JOIN asignacion_cursos_detalle acd ON ad.id_asignacion = acd.id_asignacion
+      LEFT JOIN cursos c ON acd.id_curso = c.id_curso
+      WHERE ad.cui_docente = $1
+      -- Agrupamos para que cada fila sea una asignación única con todos sus cursos
+      GROUP BY ad.id_asignacion, g.nombre_grado, s.nombre_seccion
+      ORDER BY g.nombre_grado, s.nombre_seccion;
     `;
     const { rows } = await pool.query(query, [cui]);
     res.json(rows);
   } catch (err) {
-    console.error(err.message);
+    console.error('Error al obtener asignaciones de docente:', err.message);
     res.status(500).send("Error en el servidor");
   }
 };
@@ -289,7 +299,7 @@ const getAssignedTeachers = async (req, res) => {
         d.cui_docente,
         d.nombre_completo
       FROM docentes d
-      JOIN asignacion_curso ac ON d.cui_docente = ac.cui_docente
+      JOIN asignacion_docente ad ON d.cui_docente = ad.cui_docente -- <-- CAMBIO: Nombre de tabla corregido
       WHERE d.estado_id = 1
       ORDER BY d.nombre_completo;
     `;
