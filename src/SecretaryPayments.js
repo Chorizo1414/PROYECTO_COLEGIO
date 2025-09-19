@@ -3,24 +3,18 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import "./css/SecretaryPayments.css";
-import logoColegio from "./assets/logo-colegio.png";
-
 
 export default function SecretaryPayments() {
   const navigate = useNavigate();
-
-  // Lógica de navegación dinámica
   const role = auth.getRole();
   const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
+  const isSecretary = role === 1;
 
-  // --- ESTADOS ---
   const [students, setStudents] = useState([]);
-  const [grados, setGrados] = useState([]); // 1. NUEVO ESTADO PARA LOS GRADOS DEL FILTRO
+  const [grados, setGrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Estados para los filtros y el modal
   const [grade, setGrade] = useState("Todos los grados");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null);
@@ -52,7 +46,6 @@ export default function SecretaryPayments() {
     fetchData();
   }, [navigate, refreshKey]);
 
-  // --- LÓGICA DE FILTRADO Y TOTALES (sin cambios) ---
   const filtered = useMemo(() => {
     return students.filter((s) => {
       const byGrade = grade === "Todos los grados" ? true : s.nombre_grado === grade;
@@ -68,7 +61,6 @@ export default function SecretaryPayments() {
     return { total, pendientes, alDia };
   }, [students]);
 
-  // --- FUNCIONES DE ACCIÓN (sin cambios) ---
   const markAsSolvent = async (cui_estudiante) => {
     const currentMonth = new Date().toISOString().slice(0, 7);
     if (!window.confirm(`¿Deseas marcar como solvente al alumno para el período ${currentMonth}?`)) {
@@ -103,110 +95,113 @@ export default function SecretaryPayments() {
 
   return (
     <div className="sp-page">
-      <header className="sp-header">
-        <button onClick={() => navigate(backPath)} className="sp-back-button">
-          ‹ Volver al Panel
-        </button>
-        <img src={logoColegio} alt="Colegio Mixto El Jardín" className="sp-logo" />
-        <h1 className="sp-title">COLEGIO MIXTO EL JARDÍN</h1>
-        <p className="sp-sub">San Raymundo</p>
-        <p className="sp-desc">Sistema de Control de Pagos</p>
-      </header>
-      
-      <section className="sp-stats">
-        <h2 className="sp-statsTitle">Resumen de Pagos</h2>
-        <div className="sp-statsGrid">
-          <article className="sp-stat sp-borde-azul">
-            <div className="sp-statNumber">{totals.total}</div>
-            <div className="sp-statLabel">Total de Estudiantes</div>
-          </article>
-          <article className="sp-stat sp-borde-rojo">
-            <div className="sp-statNumber">{totals.pendientes}</div>
-            <div className="sp-statLabel">Pagos Pendientes</div>
-          </article>
-          <article className="sp-stat sp-borde-verde">
-            <div className="sp-statNumber">{totals.alDia}</div>
-            <div className="sp-statLabel">Al Día</div>
-          </article>
-        </div>
-      </section>
-
-      <section className="sp-controls">
-        <div className="sp-controlsHeader">
-            <h2 className="sp-sectionTitle">Control de Estudiantes</h2>
-            <div className="sp-filters">
-                {/* 3. SELECT DINÁMICO QUE USA EL ESTADO 'grados' */}
-                <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-                    <option value="Todos los grados">Todos los grados</option>
-                    {grados.map(g => <option key={g.id_grado} value={g.nombre_grado}>{g.nombre_grado}</option>)}
-                </select>
-                <input 
-                    type="search" 
-                    placeholder="Buscar por nombre..." 
-                    value={query} 
-                    onChange={(e) => setQuery(e.target.value)} 
-                />
-            </div>
-        </div>
+      <div className="sp-container">
+        <header className="sp-header">
+          <h1>Panel de Pagos</h1>
+          <p>Gestión de solvencia de estudiantes</p>
+        </header>
         
-        <div className="sp-grid">
-          {filtered.map((s) => (
-            <article key={s.cui_estudiante} className="sp-card">
-              <div className="sp-cardTop">
-                <div className="sp-cardInfo">
-                  <h3 className="sp-studentName">{s.nombre_completo}</h3>
-                  <p className="sp-details">
-                    <strong>CUI:</strong> {s.cui_estudiante}
-                    <br />
-                    <strong>Padre:</strong> {s.nombre_padre || 'No asignado'}
-                    <br />
-                    <strong>Teléfono:</strong> {s.telefono || 'No asignado'}
-                  </p>
-                </div>
-                <div className={`sp-badge ${s.estado_pago === "PENDIENTE" ? "pendiente" : "aldia"}`}>
-                  {s.estado_pago === "PENDIENTE" ? "Pago pendiente" : "Al día"}
-                </div>
-              </div>
-              <div className="sp-actions">
-                <button className="sp-chip sp-chipYellow" onClick={() => openEditor(s)}>
-                  ✏️ Editar mensaje
-                </button>
-                <button className="sp-chip sp-chipGreen">
-                  📱 WhatsApp
-                </button>
-                <button 
-                  className="sp-chip sp-chipBlue" 
-                  onClick={() => markAsSolvent(s.cui_estudiante)}
-                  disabled={s.estado_pago !== 'PENDIENTE'}
-                >
-                  ✅ Marcar solvente
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+        <button onClick={() => navigate(backPath)} className="sp-btn-volver">
+          ⬅ Volver al Panel
+        </button>
       
-      {editing && (
-        <div className="sp-editor-overlay">
-            <div className="sp-editor">
-                <h2>Editar Mensaje</h2>
-                <textarea 
-                    value={message} 
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows="5"
-                />
-                <div className="sp-editor-actions">
-                    <button onClick={saveMessage} className="sp-btn-save">Guardar</button>
-                    <button onClick={closeEditor} className="sp-btn-cancel">Cancelar</button>
-                </div>
-            </div>
-        </div>
-      )}
+        <section className="sp-stats">
+          <h2 className="sp-statsTitle">Resumen de Pagos</h2>
+          <div className="sp-statsGrid">
+            <article className="sp-stat sp-borde-azul">
+              <div className="sp-statNumber">{totals.total}</div>
+              <div className="sp-statLabel">Total de Estudiantes</div>
+            </article>
+            <article className="sp-stat sp-borde-rojo">
+              <div className="sp-statNumber">{totals.pendientes}</div>
+              <div className="sp-statLabel">Pagos Pendientes</div>
+            </article>
+            <article className="sp-stat sp-borde-verde">
+              <div className="sp-statNumber">{totals.alDia}</div>
+              <div className="sp-statLabel">Al Día</div>
+            </article>
+          </div>
+        </section>
 
-      <footer className="sp-footer">
-        <p>Colegio Mixto El Jardín © 2025</p>
-      </footer>
+        <section className="sp-controls">
+          <div className="sp-controlsHeader">
+              <h2 className="sp-sectionTitle">Control de Estudiantes</h2>
+              <div className="sp-filters">
+                  <select value={grade} onChange={(e) => setGrade(e.target.value)}>
+                      <option value="Todos los grados">Todos los grados</option>
+                      {grados.map(g => <option key={g.id_grado} value={g.nombre_grado}>{g.nombre_grado}</option>)}
+                  </select>
+                  <input 
+                      type="search" 
+                      placeholder="Buscar por nombre..." 
+                      value={query} 
+                      onChange={(e) => setQuery(e.target.value)} 
+                  />
+              </div>
+          </div>
+          
+          <div className="sp-grid">
+            {filtered.map((s) => (
+              <article key={s.cui_estudiante} className="sp-card">
+                <div className="sp-cardTop">
+                  <div className="sp-cardInfo">
+                    <h3 className="sp-studentName">{s.nombre_completo}</h3>
+                    <p className="sp-details">
+                      <strong>CUI:</strong> {s.cui_estudiante}
+                      <br />
+                      <strong>Padre:</strong> {s.nombre_padre || 'No asignado'}
+                      <br />
+                      <strong>Teléfono:</strong> {s.telefono || 'No asignado'}
+                    </p>
+                  </div>
+                  <div className={`sp-badge ${s.estado_pago === "PENDIENTE" ? "pendiente" : "aldia"}`}>
+                    {s.estado_pago === "PENDIENTE" ? "Pago pendiente" : "Al día"}
+                  </div>
+                </div>
+                
+                {isSecretary && (
+                  <div className="sp-actions">
+                    <button className="sp-chip sp-chipYellow" onClick={() => openEditor(s)}>
+                      ✏️ Editar mensaje
+                    </button>
+                    <button className="sp-chip sp-chipGreen">
+                      📱 WhatsApp
+                    </button>
+                    <button 
+                      className="sp-chip sp-chipBlue" 
+                      onClick={() => markAsSolvent(s.cui_estudiante)}
+                      disabled={s.estado_pago !== 'PENDIENTE'}
+                    >
+                      ✅ Marcar solvente
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+        
+        {editing && (
+          <div className="sp-modalMask">
+              <div className="sp-modal">
+                  <div className="sp-modalHead">
+                    <h3>Editar Mensaje para <span>{students.find(s => s.cui_estudiante === editing)?.nombre_completo}</span></h3>
+                    <button onClick={closeEditor} className="sp-close">✕</button>
+                  </div>
+                  <textarea 
+                      value={message} 
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows="5"
+                      className="sp-textarea"
+                  />
+                  <div className="sp-modalActions">
+                      <button onClick={closeEditor} className="sp-btn sp-btnGhost">Cancelar</button>
+                      <button onClick={saveMessage} className="sp-btn sp-btnPrimary">Guardar y Enviar</button>
+                  </div>
+              </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
