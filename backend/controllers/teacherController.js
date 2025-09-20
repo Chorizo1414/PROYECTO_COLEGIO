@@ -185,16 +185,23 @@ const getTeacherAssignments = async (req, res) => {
 const getAssignmentData = async (req, res) => {
   const { assignmentId } = req.params;
   try {
-    // <-- CAMBIO: Se usa el nuevo nombre de la tabla 'asignacion_docente'
     const asignacionQuery = await pool.query("SELECT id_grado, id_seccion FROM asignacion_docente WHERE id_asignacion = $1", [assignmentId]);
-    
-    if (asignacionQuery.rows.length === 0) {
-      return res.status(404).json({ msg: "Asignación no encontrada" });
-    }
-    
+    if (asignacionQuery.rows.length === 0) return res.status(404).json({ msg: "Asignación no encontrada" });
+
     const { id_grado, id_seccion } = asignacionQuery.rows[0];
+
+    // Consulta para obtener los cursos de esta asignación
+    const cursosAsignadosQuery = await pool.query(
+      `SELECT c.id_curso, c.nombre_curso 
+       FROM cursos c
+       JOIN asignacion_cursos_detalle acd ON c.id_curso = acd.id_curso
+       WHERE acd.id_asignacion = $1
+       ORDER BY c.nombre_curso`, [assignmentId]
+    );
+
+    // Las otras consultas no cambian
     const studentsQuery = await pool.query("SELECT cui_estudiante, nombres, apellidos FROM estudiantes WHERE id_grado = $1 AND id_seccion = $2 ORDER BY apellidos, nombres", [id_grado, id_seccion]);
-    const tasksQuery = await pool.query("SELECT id_tarea, titulo, fecha_entrega FROM tareas WHERE id_asignacion = $1 ORDER BY fecha_entrega DESC", [assignmentId]);
+    const tasksQuery = await pool.query("SELECT id_tarea, titulo, fecha_entrega, id_curso FROM tareas WHERE id_asignacion = $1 ORDER BY fecha_entrega DESC", [assignmentId]);
     const deliveriesQuery = await pool.query(`SELECT e.cui_estudiante, e.id_tarea, e.entregado FROM entregas e JOIN tareas t ON e.id_tarea = t.id_tarea WHERE t.id_asignacion = $1`, [assignmentId]);
     
     const deliveriesMap = deliveriesQuery.rows.reduce((acc, delivery) => {
@@ -203,7 +210,13 @@ const getAssignmentData = async (req, res) => {
       return acc;
     }, {});
 
-    res.json({ students: studentsQuery.rows, tasks: tasksQuery.rows, deliveries: deliveriesMap });
+    // Añadimos `courses` a la respuesta
+    res.json({ 
+        courses: cursosAsignadosQuery.rows,
+        students: studentsQuery.rows, 
+        tasks: tasksQuery.rows, 
+        deliveries: deliveriesMap 
+    });
   } catch (err) {
     console.error('Error al obtener datos de la asignación:', err.message);
     res.status(500).send("Error en el servidor");
@@ -212,12 +225,16 @@ const getAssignmentData = async (req, res) => {
 
 // --- CREAR TAREA (Función existente) ---
 const createTask = async (req, res) => {
-    const { id_asignacion, titulo, fecha_entrega } = req.body;
+    // Recibimos también el id_curso
+    const { id_asignacion, id_curso, titulo, fecha_entrega } = req.body;
     try {
-        const result = await pool.query("INSERT INTO tareas (id_asignacion, titulo, fecha_entrega) VALUES ($1, $2, $3) RETURNING *", [id_asignacion, titulo, fecha_entrega]);
+        const query = `
+          INSERT INTO tareas (id_asignacion, id_curso, titulo, fecha_entrega) 
+          VALUES ($1, $2, $3, $4) RETURNING *`;
+        const result = await pool.query(query, [id_asignacion, id_curso, titulo, fecha_entrega]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error(err.message);
+        console.error("Error al crear la tarea:", err.message);
         res.status(500).send("Error en el servidor");
     }
 }
