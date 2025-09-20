@@ -4,17 +4,6 @@ import axios from "axios";
 import { auth } from "./auth";
 import './css/TeacherDashboard.css';
 
-// --- Componentes Internos (Loader y TaskModal no cambian) ---
-const Loader = ({ text = "Cargando..." }) => (
-    <div className="tdb-card tdb-card--flat" style={{ textAlign: "center", padding: "40px" }}>
-      <div style={{ marginBottom: "12px" }}>{text}</div>
-      <div style={{
-        border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%',
-        width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto'
-      }}></div>
-    </div>
-);
-  
 const TaskModal = ({ assignmentId, onClose, onSave }) => {
     const [titulo, setTitulo] = useState('');
     const [fechaEntrega, setFechaEntrega] = useState('');
@@ -58,7 +47,7 @@ const TaskModal = ({ assignmentId, onClose, onSave }) => {
                     </div>
                     <div className="tdb-modalActions">
                         <button type="button" className="tdb-btn" onClick={onClose}>Cancelar</button>
-                        <button type="submit" className="tdb-btn tdb-btn--success">Guardar Tarea</button>
+                        <button type="submit" className="tdb-btn tdb-btn--primary">Guardar Tarea</button>
                     </div>
                 </form>
             </div>
@@ -66,8 +55,6 @@ const TaskModal = ({ assignmentId, onClose, onSave }) => {
     );
 };
 
-
-// --- Componente Principal ---
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const { cui } = useParams();
@@ -84,43 +71,39 @@ export default function TeacherDashboard() {
   
   const loggedInUser = auth.getUser();
   const isCoordinatorView = !!cui;
-  // --- CORRECCIÓN CLAVE AQUÍ ---
-  // Nos aseguramos de que siempre tengamos el CUI del docente correcto.
   const targetCui = cui || loggedInUser?.cui_docente;
-  const logoUrl = "https://i.imgur.com/xCE6PxC.png";
+
+  const fetchData = useCallback(async () => {
+    if (!targetCui) {
+      setError("No se pudo identificar al docente.");
+      setLoading({ assignments: false, data: false });
+      return;
+    }
+    setLoading(p => ({ ...p, assignments: true }));
+    try {
+      const token = localStorage.getItem("accessToken");
+      const [teacherRes, assignmentsRes] = await Promise.all([
+          axios.get(`http://localhost:4000/api/teachers/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setTeacherInfo(teacherRes.data);
+      setAssignments(assignmentsRes.data);
+      if (assignmentsRes.data.length > 0) {
+        setCurrentAssignmentId(assignmentsRes.data[0].id_asignacion);
+      } else {
+        setCurrentAssignmentId("");
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("No se pudieron cargar los datos del docente.");
+    } finally {
+      setLoading(p => ({ ...p, assignments: false }));
+    }
+  }, [targetCui]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!targetCui) {
-        setError("No se pudo identificar al docente. Por favor, inicie sesión de nuevo.");
-        setLoading({ assignments: false, data: false });
-        return;
-      }
-      setLoading(p => ({ ...p, assignments: true }));
-      try {
-        const token = localStorage.getItem("accessToken");
-        const [teacherRes, assignmentsRes] = await Promise.all([
-            axios.get(`http://localhost:4000/api/teachers/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } }),
-            axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-
-        setTeacherInfo(teacherRes.data);
-        setAssignments(assignmentsRes.data);
-        
-        if (assignmentsRes.data.length > 0) {
-          setCurrentAssignmentId(assignmentsRes.data[0].id_asignacion);
-        } else {
-          setCurrentAssignmentId("");
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("No se pudieron cargar los datos del docente.");
-      } finally {
-        setLoading(p => ({ ...p, assignments: false }));
-      }
-    };
     fetchData();
-  }, [targetCui]);
+  }, [fetchData]);
 
   const fetchAssignmentData = useCallback(async () => {
     if (!currentAssignmentId) {
@@ -135,7 +118,7 @@ export default function TeacherDashboard() {
       setTasks(res.data.tasks);
       setDeliveries(res.data.deliveries || {});
     } catch (err) {
-      console.error(`Error fetching data for assignment ${currentAssignmentId}`, err);
+      console.error(`Error fetching assignment data`, err);
       setError("No se pudieron cargar los datos de la asignación.");
     } finally {
       setLoading(p => ({ ...p, data: false }));
@@ -183,94 +166,81 @@ export default function TeacherDashboard() {
       }
   };
 
-  const currentAssignment = assignments.find(a => a.id_asignacion === Number(currentAssignmentId));
-
   return (
     <div className="tdb-page">
-      {showTaskModal && <TaskModal assignmentId={currentAssignmentId} onClose={() => setShowTaskModal(false)} onSave={handleTaskSaved} />}
-      
-      <header className="tdb-header">
-        <div className="tdb-header-inner">
-          <img src={logoUrl} alt="Colegio Mixto El Jardín" className="tdb-logo" />
-          <div className="tdb-titleBlock">
-            <h1>Panel de Docente: {teacherInfo?.nombre_completo || 'Cargando...'}</h1>
-            <p>COLEGIO MIXTO EL JARDÍN</p>
-          </div>
-        </div>
-        <div className="tdb-headActions">
-           {/* --- BOTÓN "VOLVER" CAMBIADO POR "CERRAR SESIÓN" --- */}
-           {isCoordinatorView ? (
-             <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate('/seleccionar-docente')}>⬅ Volver a la Selección</button>
-           ) : (
-             <button className="tdb-btn tdb-btn--danger" onClick={logout}>🚪 Cerrar Sesión</button>
-           )}
-           {!isCoordinatorView && <button className="tdb-btn tdb-btn--ghost" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva tarea</button>}
-        </div>
-      </header>
-      
-      <main className="tdb-main">
-        {loading.assignments ? <Loader text="Cargando asignaciones..." /> : error ? (
-           <div className="tdb-card tdb-card--flat" style={{color: 'red'}}>{error}</div>
-        ) : (
-          <section className="tdb-section">
-            <div className="tdb-card">
-              <div className="tdb-cardTitle">
-                Seguimiento de tareas — <strong>{currentAssignment ? `${currentAssignment.nombre_grado} ${currentAssignment.nombre_seccion}` : 'Ninguna'}</strong>
-              </div>
-              <div className="tdb-followToolbar">
-                <div className="tdb-followGroup">
-                  <label className="tdb-label">Curso Asignado</label>
-                  <select className="tdb-select" value={currentAssignmentId} onChange={(e) => setCurrentAssignmentId(e.target.value)} disabled={assignments.length === 0}>
-                    {assignments.length === 0 ? <option>No tienes cursos asignados</option> : assignments.map((a) => (
-                      <option key={a.id_asignacion} value={a.id_asignacion}>
-                        {a.nombre_grado} - {a.nombre_seccion} ({a.cursos ? a.cursos.join(', ') : 'Cargando...'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {loading.data ? <Loader text="Cargando alumnos y tareas..."/> : (
-                <>
-                  <div className="tdb-trackWrap">
-                    <table className="tdb-matrix">
-                      <thead>
-                        <tr>
-                          <th className="sticky-left">Alumno</th>
-                          {tasks.map((t) => (
-                            <th key={t.id_tarea}>
-                              <div className="th-col">
-                                <span className="th-title" title={t.titulo}>{t.titulo}</span>
-                                <small>{new Date(t.fecha_entrega).toLocaleDateString()}</small>
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.map((s) => (
-                          <tr key={s.cui_estudiante}>
-                            <td className="sticky-left"><span>{s.apellidos}, {s.nombres}</span></td>
-                            {tasks.map((t) => (
-                              <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="td-center">
-                                <input className="chk" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} aria-label={`${s.nombres} completó ${t.titulo}`} disabled={isCoordinatorView} />
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {!isCoordinatorView && (
-                    <div className="tdb-actionsRow">
-                      <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>Guardar cambios</button>
-                    </div>
-                  )}
-                </>
-              )}
+      <div className="tdb-container">
+        {/* CORRECCIÓN #2: Se conecta la función handleTaskSaved al modal */}
+        {showTaskModal && <TaskModal assignmentId={currentAssignmentId} onClose={() => setShowTaskModal(false)} onSave={handleTaskSaved} />}
+        
+        <header className="tdb-header">
+          <h1>Panel de Docente: {teacherInfo?.nombre_completo || 'Cargando...'}</h1>
+          <p>Seguimiento y control de tareas</p>
+        </header>
+
+        <div className="tdb-actions-bar">
+          {isCoordinatorView ? (
+            <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate('/seleccionar-docente')}>⬅ Volver a la Selección</button>
+          ) : (
+            <button className="tdb-btn tdb-btn--danger" onClick={logout}>🚪 Cerrar Sesión</button>
+          )}
+
+          {!isCoordinatorView && (
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+              <button className="tdb-btn tdb-btn--secondary" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva Tarea</button>
+              <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>💾 Guardar Cambios</button>
             </div>
-          </section>
+          )}
+        </div>
+
+        {loading.assignments ? <p>Cargando...</p> : error ? <p style={{color: 'red'}}>{error}</p> : (
+          <div className="tdb-card">
+            <h2 className="tdb-card-title">Seguimiento de Tareas</h2>
+            <div className="tdb-controls">
+              <div className="tdb-control-group">
+                <label htmlFor="curso-select" className="tdb-label">Curso Asignado</label>
+                <select id="curso-select" className="tdb-select" value={currentAssignmentId} onChange={(e) => setCurrentAssignmentId(e.target.value)} disabled={assignments.length === 0}>
+                  {assignments.length === 0 ? <option>No tienes cursos asignados</option> : assignments.map((a) => (
+                    <option key={a.id_asignacion} value={a.id_asignacion}>
+                      {a.nombre_grado} - {a.nombre_seccion} ({a.cursos ? a.cursos.join(', ') : '...'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {loading.data ? <p>Cargando alumnos...</p> : (
+              <div className="tdb-track-wrapper">
+                <table className="tdb-matrix">
+                  <thead>
+                    <tr>
+                      <th className="student-name">Alumno</th>
+                      {tasks.map((t) => (
+                        <th key={t.id_tarea} className="tdb-task-header">
+                          <span className="title" title={t.titulo}>{t.titulo}</span>
+                          <span className="date">{new Date(t.fecha_entrega).toLocaleDateString()}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map((s) => (
+                      <tr key={s.cui_estudiante}>
+                        <td className="student-name"><span>{s.apellidos}, {s.nombres}</span></td>
+                        {tasks.map((t) => (
+                          <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="task-check">
+                            {/* CORRECCIÓN #1: Se conecta la función handleCheckChange al checkbox */}
+                            <input className="tdb-checkbox" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} aria-label={`${s.nombres} completó ${t.titulo}`} disabled={isCoordinatorView} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
