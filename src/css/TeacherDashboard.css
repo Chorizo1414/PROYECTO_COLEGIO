@@ -209,3 +209,11 @@
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
 }
+
+.tdb-course-header {
+  text-align: center;
+  background-color: #f1f5f9; /* Un color de fondo ligeramente distinto */
+  border-bottom: 2px solid #e2e8f0;
+  font-weight: 700;
+  color: var(--texto-principal);
+}

@@ -201,7 +201,15 @@ const getAssignmentData = async (req, res) => {
 
     // Las otras consultas no cambian
     const studentsQuery = await pool.query("SELECT cui_estudiante, nombres, apellidos FROM estudiantes WHERE id_grado = $1 AND id_seccion = $2 ORDER BY apellidos, nombres", [id_grado, id_seccion]);
-    const tasksQuery = await pool.query("SELECT id_tarea, titulo, fecha_entrega, id_curso FROM tareas WHERE id_asignacion = $1 ORDER BY fecha_entrega DESC", [assignmentId]);
+    const tasksQuery = await pool.query(
+  `SELECT 
+     t.id_tarea, t.titulo, t.fecha_entrega, t.id_curso, c.nombre_curso 
+   FROM tareas t
+   JOIN cursos c ON t.id_curso = c.id_curso
+   WHERE t.id_asignacion = $1 
+   ORDER BY c.nombre_curso, t.fecha_entrega DESC`, 
+  [assignmentId]
+);
     const deliveriesQuery = await pool.query(`SELECT e.cui_estudiante, e.id_tarea, e.entregado FROM entregas e JOIN tareas t ON e.id_tarea = t.id_tarea WHERE t.id_asignacion = $1`, [assignmentId]);
     
     const deliveriesMap = deliveriesQuery.rows.reduce((acc, delivery) => {

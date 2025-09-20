@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react"; // <--- AQUÍ ESTÁ LA CORRECCIÓN
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
 import './css/TeacherDashboard.css';
 
-// --- Componente TaskModal actualizado ---
+// El componente TaskModal no cambia
 const TaskModal = ({ assignmentId, courses, onClose, onSave }) => {
     const [titulo, setTitulo] = useState('');
     const [fechaEntrega, setFechaEntrega] = useState('');
-    // <-- NUEVO: Estado para el curso seleccionado
     const [idCurso, setIdCurso] = useState('');
 
-    // Preseleccionar el primer curso si la lista de cursos cambia
     useEffect(() => {
         if (courses && courses.length > 0) {
             setIdCurso(courses[0].id_curso);
@@ -26,7 +24,6 @@ const TaskModal = ({ assignmentId, courses, onClose, onSave }) => {
         }
         try {
             const token = localStorage.getItem("accessToken");
-            // <-- CAMBIO: Se envía también el id_curso
             const payload = { id_asignacion: assignmentId, id_curso: idCurso, titulo, fecha_entrega: fechaEntrega };
             const res = await axios.post("http://localhost:4000/api/teachers/tasks", payload, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -47,7 +44,6 @@ const TaskModal = ({ assignmentId, courses, onClose, onSave }) => {
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="tdb-form">
-                        {/* <-- NUEVO: Selector de Curso --> */}
                         <div className="tdb-formCol">
                             <label className="tdb-label">Curso</label>
                             <select className="tdb-select" value={idCurso} onChange={e => setIdCurso(e.target.value)} required>
@@ -84,7 +80,6 @@ export default function TeacherDashboard() {
 
   const [assignments, setAssignments] = useState([]);
   const [currentAssignmentId, setCurrentAssignmentId] = useState("");
-  // <-- NUEVO: Estado para los cursos de la asignación actual
   const [currentCourses, setCurrentCourses] = useState([]);
   const [students, setStudents] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -130,7 +125,6 @@ export default function TeacherDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // <-- CAMBIO: fetchAssignmentData ahora también recibe y guarda los cursos
   const fetchAssignmentData = useCallback(async () => {
     if (!currentAssignmentId) {
         setStudents([]); setTasks([]); setDeliveries({}); setCurrentCourses([]); return;
@@ -182,7 +176,7 @@ export default function TeacherDashboard() {
   };
 
   const handleTaskSaved = (newTask) => {
-    setTasks(prev => [newTask, ...prev].sort((a, b) => new Date(b.fecha_entrega) - new Date(a.fecha_entrega)));
+    fetchAssignmentData();
     setShowTaskModal(false);
   };
 
@@ -192,6 +186,17 @@ export default function TeacherDashboard() {
           navigate("/login", { replace: true });
       }
   };
+
+  const groupedTasks = useMemo(() => {
+    return tasks.reduce((acc, task) => {
+      const courseName = task.nombre_curso || 'General';
+      if (!acc[courseName]) {
+        acc[courseName] = [];
+      }
+      acc[courseName].push(task);
+      return acc;
+    }, {});
+  }, [tasks]);
 
   return (
     <div className="tdb-page">
@@ -239,7 +244,14 @@ export default function TeacherDashboard() {
                 <table className="tdb-matrix">
                   <thead>
                     <tr>
-                      <th className="student-name">Alumno</th>
+                      <th rowSpan="2" className="student-name">Alumno</th>
+                      {Object.entries(groupedTasks).map(([courseName, courseTasks]) => (
+                        <th key={courseName} colSpan={courseTasks.length} className="tdb-course-header">
+                          {courseName}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr>
                       {tasks.map((t) => (
                         <th key={t.id_tarea} className="tdb-task-header">
                           <span className="title" title={t.titulo}>{t.titulo}</span>
