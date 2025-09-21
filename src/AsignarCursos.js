@@ -13,18 +13,20 @@ const AsignarCursos = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- LÓGICA DE EDICIÓN ---
+  const [editingId, setEditingId] = useState(null); // ID de la asignación que se está editando
+
   // Estados del formulario
-  // <-- CAMBIO: Se modifica el estado para aceptar un array de cursos
   const initialFormState = {
     cui_docente: '',
     id_grado: '',
     id_seccion: '',
-    cursos_ids: [], // Ahora es un array para selección múltiple
+    cursos_ids: [],
     anio: new Date().getFullYear(),
   };
   const [form, setForm] = useState(initialFormState);
 
-  // Carga inicial de datos (sin cambios)
+  // Carga inicial de datos
   const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
     try {
@@ -48,7 +50,7 @@ const AsignarCursos = () => {
     fetchData();
   }, []);
 
-  // Cargar secciones y cursos cuando cambia el grado (sin cambios)
+  // Cargar secciones y cursos cuando cambia el grado
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (form.id_grado) {
@@ -62,9 +64,8 @@ const AsignarCursos = () => {
     }
   }, [form.id_grado]);
 
-  // <-- CAMBIO: Se crea un manejador específico para el multi-select
   const handleCursosChange = (e) => {
-    const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+    const selectedIds = Array.from(e.target.selectedOptions, option => String(option.value));
     setForm(prev => ({ ...prev, cursos_ids: selectedIds }));
   };
   
@@ -73,23 +74,53 @@ const AsignarCursos = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- FUNCIÓN DE SUBMIT (Crear o Editar) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
     
-    // La lógica de edición es más compleja ahora, nos enfocamos en crear
-    // <-- CAMBIO: La URL y el método ahora son fijos para la creación
-    const url = 'http://localhost:4000/api/asignaciones';
-    const method = 'post';
+    // Si estamos editando, usa PUT. Si no, usa POST.
+    const method = editingId ? 'put' : 'post';
+    const url = `http://localhost:4000/api/asignaciones${editingId ? `/${editingId}` : ''}`;
 
     try {
       await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
-      alert(`Asignación creada con éxito`);
-      setForm(initialFormState); // Limpiar formulario
-      fetchData(); // Recargar todo
+      alert(`Asignación ${editingId ? 'actualizada' : 'creada'} con éxito`);
+      handleCancelEdit(); // Limpiar formulario y estado de edición
+      fetchData(); // Recargar la lista de asignaciones
     } catch (error) {
       alert('Error: ' + (error.response?.data?.msg || 'Error inesperado'));
     }
+  };
+
+  // --- FUNCIÓN AL CLICKEAR "EDITAR" ---
+  const handleEditClick = async (asignacion) => {
+      const token = localStorage.getItem('accessToken');
+      try {
+          // Llama a la nueva ruta para obtener los datos detallados
+          const { data } = await axios.get(`http://localhost:4000/api/asignaciones/${asignacion.id_asignacion}`, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          setEditingId(asignacion.id_asignacion);
+          // Rellena el formulario con los datos recibidos
+          setForm({
+              cui_docente: data.cui_docente,
+              id_grado: data.id_grado,
+              id_seccion: data.id_seccion,
+              cursos_ids: data.cursos_ids.map(String), // Asegurarse que sean strings
+              anio: data.anio
+          });
+          window.scrollTo(0, 0); // Sube al inicio de la página para ver el form
+      } catch (error) {
+          alert('No se pudieron cargar los datos para editar.');
+      }
+  };
+  
+  // --- FUNCIÓN PARA CANCELAR LA EDICIÓN ---
+  const handleCancelEdit = () => {
+      setEditingId(null);
+      setForm(initialFormState);
   };
   
   const handleDelete = async (id) => {
@@ -119,7 +150,7 @@ const AsignarCursos = () => {
         </button>
         <div className="ac-grid">
           <div className="ac-card">
-            <h2>Nueva Asignación</h2>
+            <h2>{editingId ? 'Editando Asignación' : 'Nueva Asignación'}</h2>
             <form onSubmit={handleSubmit} className="ac-form">
               <select name="cui_docente" value={form.cui_docente} onChange={handleChange} required>
                 <option value="">-- Seleccione un Docente --</option>
@@ -134,7 +165,6 @@ const AsignarCursos = () => {
                 {secciones.map(s => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>)}
               </select>
               
-              {/* <-- CAMBIO: Select de cursos ahora es múltiple --> */}
               <label htmlFor="cursos_ids">Cursos (mantén Ctrl para varios)</label>
               <select 
                 id="cursos_ids"
@@ -151,7 +181,10 @@ const AsignarCursos = () => {
 
               <input type="number" name="anio" value={form.anio} onChange={handleChange} required />
               <div className="ac-form-actions">
-                <button type="submit" className="ac-btn ac-btn--primary">Asignar Cursos</button>
+                  {editingId && (
+                      <button type="button" className="ac-btn ac-btn--secondary" onClick={handleCancelEdit}>Cancelar Edición</button>
+                  )}
+                  <button type="submit" className="ac-btn ac-btn--primary">{editingId ? 'Guardar Cambios' : 'Asignar Cursos'}</button>
               </div>
             </form>
           </div>
@@ -162,12 +195,10 @@ const AsignarCursos = () => {
                 <div key={a.id_asignacion} className="ac-list-item">
                   <div>
                     <strong className="ac-docente">{a.docente}</strong>
-                    {/* <-- CAMBIO: Se muestra la lista de cursos --> */}
                     <span className="ac-detalle">{a.grado} {a.seccion} - {a.cursos ? a.cursos.join(', ') : 'Sin cursos'} ({a.anio})</span>
                   </div>
                   <div className="ac-item-actions">
-                    {/* La edición se deshabilita temporalmente por complejidad */}
-                    <button className="ac-action-btn" title="Editar - Próximamente" disabled>✏️</button>
+                    <button className="ac-action-btn" onClick={() => handleEditClick(a)}>✏️</button>
                     <button className="ac-action-btn ac-delete-btn" onClick={() => handleDelete(a.id_asignacion)}>🗑️</button>
                   </div>
                 </div>

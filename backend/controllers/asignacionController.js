@@ -10,7 +10,7 @@ const getAsignaciones = async (req, res) => {
         g.nombre_grado AS grado,
         s.nombre_seccion AS seccion,
         ad.anio,
-        ARRAY_AGG(c.nombre_curso) as cursos -- Agrupamos los nombres de los cursos en un array
+        ARRAY_AGG(c.nombre_curso) as cursos
       FROM asignacion_docente ad
       JOIN docentes d ON ad.cui_docente = d.cui_docente
       JOIN grados g ON ad.id_grado = g.id_grado
@@ -27,6 +27,18 @@ const getAsignaciones = async (req, res) => {
     console.error('Error al obtener asignaciones:', err.message);
     res.status(500).json({ msg: 'Error en el servidor' });
   }
+};
+
+const getCursosPorGrado = async (req, res) => {
+    const { gradoId } = req.params;
+    try {
+        const query = 'SELECT id_curso, nombre_curso FROM cursos WHERE id_grado = $1 OR id_grado IS NULL ORDER BY nombre_curso';
+        const { rows } = await pool.query(query, [gradoId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error al obtener cursos por grado:', err.message);
+        res.status(500).json({ msg: 'Error en el servidor' });
+    }
 };
 
 // CREAR UNA NUEVA ASIGNACIÓN
@@ -106,42 +118,91 @@ const getCursosByGrado = async (req, res) => {
     }
 };
 
-// ACTUALIZAR UNA ASIGNACIÓN EXISTENTE
-const updateAsignacion = async (req, res) => {
+const getAsignacionById = async (req, res) => {
   const { id } = req.params;
-  const { cui_docente, id_curso, id_grado, id_seccion, anio } = req.body;
-  const usuario_modifico = req.user.username;
-
   try {
-    const query = `
-      UPDATE asignacion_curso 
-      SET 
-        cui_docente = $1, 
-        id_curso = $2, 
-        id_grado = $3, 
-        id_seccion = $4, 
-        anio = $5,
-        usuario_modifico = $6,
-        fecha_modifico = NOW()
-      WHERE id_asignacion = $7
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(query, [cui_docente, id_curso, id_grado, id_seccion, anio, usuario_modifico, id]);
+    // 1. Obtenemos los datos principales de la asignación
+    const mainQuery = `
+        SELECT cui_docente, id_grado, id_seccion, anio 
+        FROM asignacion_docente WHERE id_asignacion = $1`;
+    const mainResult = await pool.query(mainQuery, [id]);
 
-    if (rows.length === 0) {
-      return res.status(404).json({ msg: 'Asignación no encontrada para actualizar.' });
+    if (mainResult.rows.length === 0) {
+      return res.status(404).json({ msg: 'Asignación no encontrada' });
     }
-    res.json(rows[0]);
+
+    // 2. Obtenemos los IDs de los cursos asociados a esa asignación
+    const cursosQuery = `
+        SELECT id_curso 
+        FROM asignacion_cursos_detalle WHERE id_asignacion = $1`;
+    const cursosResult = await pool.query(cursosQuery, [id]);
+    
+    // Extraemos solo los IDs en un array plano, ej: [1, 5, 8]
+    const cursos_ids = cursosResult.rows.map(row => row.id_curso);
+
+    // 3. Combinamos todo en un solo objeto y lo enviamos
+    const response = {
+      ...mainResult.rows[0],
+      cursos_ids
+    };
+    
+    res.json(response);
+
   } catch (err) {
-    console.error('Error al actualizar asignación:', err.message);
+    console.error('Error al obtener la asignación por ID:', err.message);
     res.status(500).json({ msg: 'Error en el servidor' });
   }
 };
 
+// ACTUALIZAR UNA ASIGNACIÓN EXISTENTE
+const updateAsignacion = async (req, res) => {
+    const { id } = req.params;
+    const { cui_docente, id_grado, id_seccion, anio, cursos_ids } = req.body;
+    const usuario_modifico = req.user.username;
+
+    if (!cursos_ids || !Array.isArray(cursos_ids) || cursos_ids.length === 0) {
+        return res.status(400).json({ msg: 'Debe seleccionar al menos un curso.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Actualizar la tabla principal 'asignacion_docente'
+        const updateMainQuery = `
+            UPDATE asignacion_docente
+            SET cui_docente = $1, id_grado = $2, id_seccion = $3, anio = $4, 
+                usuario_modifico = $5, fecha_modifico = now()
+            WHERE id_asignacion = $6;
+        `;
+        await client.query(updateMainQuery, [cui_docente, id_grado, id_seccion, anio, usuario_modifico, id]);
+        
+        // 2. Borrar los cursos anteriores para evitar duplicados
+        await client.query('DELETE FROM asignacion_cursos_detalle WHERE id_asignacion = $1', [id]);
+        
+        // 3. Insertar la nueva lista de cursos
+        const detalleQuery = 'INSERT INTO asignacion_cursos_detalle (id_asignacion, id_curso) VALUES ($1, $2)';
+        for (const id_curso of cursos_ids) {
+            await client.query(detalleQuery, [id, id_curso]);
+        }
+        
+        await client.query('COMMIT');
+        res.status(200).json({ msg: 'Asignación actualizada con éxito.' });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error al actualizar asignación:', err.message);
+        res.status(500).json({ msg: 'Error en el servidor' });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
   getAsignaciones,
+  getCursosPorGrado,
   createAsignacion,
   deleteAsignacion,
-  getCursosByGrado,
-  updateAsignacion
+  getAsignacionById, 
+  updateAsignacion 
 };

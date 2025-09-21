@@ -100,7 +100,7 @@ export default function RegistroDocente() {
           </div>
         </form>
         <footer className="treg-footer">
-          <Link to="/panel" className="treg-back">Volver al panel</Link>
+          <Link to="/docentes" className="treg-back">Volver a la gestión de docentes</Link>
         </footer>
       </div>
     </div>
