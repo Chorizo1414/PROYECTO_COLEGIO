@@ -8,9 +8,8 @@ const client = twilio(accountSid, authToken);
 
 const sendMessage = async (to, message) => {
   try {
-    // El número de destino debe tener el prefijo "whatsapp:" y el código de país.
-    // Ej: "whatsapp:+50212345678"
-    const recipient = `whatsapp:${to}`;
+    // El número de destino debe tener el prefijo "whatsapp:" y el signo "+"
+    const recipient = `whatsapp:+${to}`;
     
     // El número "from" es el que guardamos en el .env
     const from = process.env.TWILIO_WHATSAPP_NUMBER;
@@ -21,7 +20,7 @@ const sendMessage = async (to, message) => {
       to: recipient
     });
 
-    console.log(`Mensaje de Twilio enviado a ${to}`);
+    console.log(`Mensaje de Twilio enviado a ${recipient}`);
     return { success: true };
 
   } catch (error) {

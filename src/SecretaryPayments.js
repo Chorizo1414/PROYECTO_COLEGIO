@@ -13,6 +13,7 @@ export default function SecretaryPayments() {
   const [students, setStudents] = useState([]);
   const [grados, setGrados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingCUI, setSendingCUI] = useState(null);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [grade, setGrade] = useState("Todos los grados");
@@ -90,6 +91,25 @@ export default function SecretaryPayments() {
     closeEditor();
   };
   
+  const sendPaymentReminder = async (student) => {
+    if (!window.confirm(`¿Enviar recordatorio de pago por WhatsApp al encargado de ${student.nombre_completo}?`)) return;
+
+    setSendingCUI(student.cui_estudiante); // Bloquear botón y mostrar "Enviando..."
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.post('http://localhost:4000/api/notifications/payment-reminder', 
+        { cui_estudiante: student.cui_estudiante },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      alert(response.data.msg); // <-- Esta alerta te dirá "Mensaje enviado..."
+    } catch (err) {
+      const errorMessage = err.response?.data?.msg || "No se pudo enviar el mensaje.";
+      alert('Error: ' + errorMessage); // <-- O esta si hay un error
+    } finally {
+      setSendingCUI(null); // Desbloquear botón
+    }
+  };
+  
   if (loading) return <div className="sp-page">Cargando alumnos...</div>;
   if (error) return <div className="sp-page" style={{color: 'red'}}>{error}</div>;
 
@@ -161,11 +181,12 @@ export default function SecretaryPayments() {
                 
                 {isSecretary && (
                   <div className="sp-actions">
-                    <button className="sp-chip sp-chipYellow" onClick={() => openEditor(s)}>
-                      ✏️ Editar mensaje
-                    </button>
-                    <button className="sp-chip sp-chipGreen">
-                      📱 WhatsApp
+                    <button 
+                      className="sp-chip sp-chipGreen"
+                      onClick={() => sendPaymentReminder(s)}
+                      disabled={s.estado_pago !== 'PENDIENTE' || sendingCUI === s.cui_estudiante}
+                    >
+                      {sendingCUI === s.cui_estudiante ? 'Enviando...' : '📱 Recordar Pago'}
                     </button>
                     <button 
                       className="sp-chip sp-chipBlue" 
