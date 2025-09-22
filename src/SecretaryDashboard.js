@@ -9,7 +9,7 @@ export default function SecretaryDashboard() {
     // Opciones específicas para el rol de Secretaría
     const menuOptions = [
         { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir y modificar datos de estudiantes.', icon: '📚', path: '/alumnos' },
-        { key: 'reg_padre', title: 'Registrar Encargado', desc: 'Añadir un nuevo padre o encargado al sistema.', icon: '👨‍👩‍👧', path: '/parent-register' },
+        { key: 'gest_padre', title: 'Gestionar Encargados', desc: 'Añadir y administrar padres o encargados.', icon: '👨‍👩‍👧', path: '/gestionar-encargados' },
         { key: 'ver_pagos', title: 'Panel de Pagos', desc: 'Verificar y gestionar la solvencia de los alumnos.', icon: '📋', path: '/panel/secretaria' },
     ];
     

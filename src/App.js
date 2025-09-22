@@ -15,6 +15,7 @@ import AsignarCursos from "./AsignarCursos";
 import ParentRegister from "./ParentRegister";
 import SecretaryPayments from "./SecretaryPayments";
 import SeleccionarDocente from "./SeleccionarDocente";
+import ParentDashboard from './ParentDashboard';
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/gestionar-cursos/*" element={<ProtectedRoute><Cursos/></ProtectedRoute>} />
         <Route path="/asignar-cursos" element={<ProtectedRoute><AsignarCursos/></ProtectedRoute>} />
         <Route path="/parent-register" element={<ProtectedRoute><ParentRegister/></ProtectedRoute>} />
+        <Route path="/gestionar-encargados" element={<ProtectedRoute allowedRoles={[1, 2]}><ParentDashboard /></ProtectedRoute>} />
 
         {/* Vistas Específicas */}
         <Route path="/panel/secretaria" element={<ProtectedRoute><SecretaryPayments/></ProtectedRoute>} />

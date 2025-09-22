@@ -39,6 +39,7 @@ export default function CoordinatorDashboard() {
     const menuOptions = [
         { key: 'reg_docente', title: 'Gestionar Docentes', desc: 'Registrar y modificar personal docente.', icon: '👩‍🏫', path: '/docentes' },
         { key: 'reg_alumno', title: 'Gestionar Alumnos', desc: 'Inscribir nuevos estudiantes y asignarles padres.', icon: '📚', path: '/alumnos' },
+        { key: 'gest_padre', title: 'Gestionar Encargados', desc: 'Añadir y administrar padres o encargados.', icon: '👨‍👩‍👧', path: '/gestionar-encargados' },
         { key: 'gest_cursos', title: 'Gestionar Cursos', desc: 'Crear y eliminar las materias del pénsum.', icon: '📜', path: '/gestionar-cursos' },
         { key: 'asignar_cursos', title: 'Asignar Cursos/Secciones', desc: 'Asignar materias y grados a los docentes.', icon: '✏️', path: '/asignar-cursos' },
         { key: 'ver_docentes', title: 'Panel de Docentes', desc: 'Ver el control de tareas de los maestros.', icon: '👨‍🏫', path: '/seleccionar-docente' },

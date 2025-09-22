@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const { createParent, getAllParents } = require('../controllers/parentController');
+const {
+    getAllParents,
+    getParentById,
+    registerParent,
+    updateParent,
+    deactivateParent,
+    activateParent
+} = require('../controllers/parentController');
 
-// POST /api/parents -> Crear un padre/encargado (ruta protegida)
-router.post('/', authMiddleware, createParent);
-
-// GET /api/parents -> Obtener todos los padres (ruta protegida)
 router.get('/', authMiddleware, getAllParents);
+router.get('/:cui', authMiddleware, getParentById);
+router.post('/', authMiddleware, registerParent);
+router.put('/:cui', authMiddleware, updateParent);
+router.put('/deactivate/:cui', authMiddleware, deactivateParent);
+router.put('/activate/:cui', authMiddleware, activateParent);
 
 module.exports = router;
