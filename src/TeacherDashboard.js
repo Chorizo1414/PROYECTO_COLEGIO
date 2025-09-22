@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react"; // <--- AQUÍ ESTÁ LA CORRECCIÓN
+import React, { useState, useEffect, useCallback, useMemo } from "react"; 
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
@@ -89,9 +89,58 @@ export default function TeacherDashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [teacherInfo, setTeacherInfo] = useState(null);
   
+  const [isSendingAll, setIsSendingAll] = useState(false);
+  const [sendingCui, setSendingCui] = useState(null);
+
   const loggedInUser = auth.getUser();
   const isCoordinatorView = !!cui;
   const targetCui = cui || loggedInUser?.cui_docente;
+
+   // <-- NUEVA FUNCIÓN PARA ENVIAR NOTIFICACIONES -->
+  const handleSendReminders = async (studentCuis = []) => {
+    let studentsToNotify = [];
+    let confirmationMessage = "";
+
+    if (studentCuis.length > 0) {
+      // Caso: Enviar a un estudiante específico
+      const student = students.find(s => s.cui_estudiante === studentCuis[0]);
+      studentsToNotify = [{ cui_estudiante: student.cui_estudiante }];
+      confirmationMessage = `Se enviará un reporte de tareas pendientes a los encargados de ${student.nombres} ${student.apellidos}. ¿Continuar?`;
+    } else {
+      // Caso: Enviar a todos los pendientes
+      studentsToNotify = students.filter(student =>
+        tasks.some(task => !deliveries[student.cui_estudiante]?.[task.id_tarea])
+      );
+      if (studentsToNotify.length === 0) {
+        return alert("Todos los estudiantes están al día con sus tareas en esta asignación.");
+      }
+      confirmationMessage = `Se enviarán reportes a los ${studentsToNotify.length} encargados de estudiantes con tareas pendientes. ¿Continuar?`;
+    }
+
+    if (!window.confirm(confirmationMessage)) return;
+    
+    // Mostrar estado de "enviando"
+    if (studentCuis.length > 0) setSendingCui(studentCuis[0]);
+    else setIsSendingAll(true);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const payload = {
+        studentCUIs: studentsToNotify.map(s => s.cui_estudiante),
+        assignmentId: currentAssignmentId
+      };
+      const res = await axios.post("http://localhost:4000/api/notifications/homework-reminder", payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert(res.data.msg);
+    } catch (err) {
+      alert("Error al enviar las notificaciones: " + (err.response?.data?.msg || err.message));
+    } finally {
+      // Limpiar estado de "enviando"
+      if (studentCuis.length > 0) setSendingCui(null);
+      else setIsSendingAll(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!targetCui) {
@@ -215,10 +264,14 @@ export default function TeacherDashboard() {
             <button className="tdb-btn tdb-btn--danger" onClick={logout}>🚪 Cerrar Sesión</button>
           )}
 
-          {!isCoordinatorView && (
+           {!isCoordinatorView && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-              <button className="tdb-btn tdb-btn--secondary" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId || currentCourses.length === 0}>+ Nueva Tarea</button>
+              <button className="tdb-btn tdb-btn--secondary" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva Tarea</button>
               <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>💾 Guardar Cambios</button>
+              {/* <-- NUEVO BOTÓN PARA NOTIFICAR A TODOS --> */}
+              <button className="tdb-btn tdb-btn--whatsapp" onClick={() => handleSendReminders()} disabled={isSendingAll || !currentAssignmentId}>
+                {isSendingAll ? 'Enviando...' : '📱 Notificar Pendientes'}
+              </button>
             </div>
           )}
         </div>
@@ -244,13 +297,12 @@ export default function TeacherDashboard() {
                 <table className="tdb-matrix">
                   <thead>
                     <tr>
-                      <th rowSpan="2" className="student-name">Alumno</th>
-                      {Object.entries(groupedTasks).map(([courseName, courseTasks]) => (
-                        <th key={courseName} colSpan={courseTasks.length} className="tdb-course-header">
-                          {courseName}
-                        </th>
-                      ))}
-                    </tr>
+                <th rowSpan="2" className="student-name">Alumno</th>
+                {Object.entries(groupedTasks).map(([courseName, courseTasks]) => (
+                  <th key={courseName} colSpan={courseTasks.length} className="tdb-course-header">{courseName}</th>
+                ))}
+                <th rowSpan="2" className="tdb-action-header">Acción</th>
+              </tr>
                     <tr>
                       {tasks.map((t) => (
                         <th key={t.id_tarea} className="tdb-task-header">
@@ -261,17 +313,30 @@ export default function TeacherDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {students.map((s) => (
-                      <tr key={s.cui_estudiante}>
-                        <td className="student-name"><span>{s.apellidos}, {s.nombres}</span></td>
-                        {tasks.map((t) => (
-                          <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="task-check">
-                            <input className="tdb-checkbox" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} aria-label={`${s.nombres} completó ${t.titulo}`} disabled={isCoordinatorView} />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
+              {students.map((s) => (
+                <tr key={s.cui_estudiante}>
+                  <td className="student-name"><span>{s.apellidos}, {s.nombres}</span></td>
+                  {tasks.map((t) => (
+                    <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="task-check">
+                      <input className="tdb-checkbox" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} disabled={isCoordinatorView} />
+                    </td>
+                  ))}
+                  {/* <-- NUEVA CELDA CON BOTÓN DE NOTIFICACIÓN INDIVIDUAL --> */}
+                  <td className="tdb-action-cell">
+                    {!isCoordinatorView && (
+                      <button 
+                        className="tdb-btn-icon" 
+                        onClick={() => handleSendReminders([s.cui_estudiante])}
+                        disabled={sendingCui === s.cui_estudiante}
+                        title="Enviar reporte de tareas pendientes"
+                      >
+                        {sendingCui === s.cui_estudiante ? '⏳' : '💬'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
                 </table>
               </div>
             )}

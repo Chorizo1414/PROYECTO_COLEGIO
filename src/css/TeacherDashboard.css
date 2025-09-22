@@ -217,3 +217,35 @@
   font-weight: 700;
   color: var(--texto-principal);
 }
+
+.tdb-btn--whatsapp {
+  background-color: #25D366;
+  color: white;
+}
+.tdb-btn--whatsapp:hover {
+  background-color: #1DAE54;
+}
+
+.tdb-action-header, .tdb-action-cell {
+  text-align: center;
+}
+
+.tdb-btn-icon {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tdb-btn-icon:hover {
+  background-color: #e2e8f0;
+}
+.tdb-btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
