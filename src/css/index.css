@@ -1,3 +1,18 @@
+body {
+  margin: 0;
+  /* --- PRUEBA TUS FUENTES AQUÍ --- */
+  /* Descomenta solo UNA de las siguientes tres líneas para probar la fuente */
+  /* font-family: 'Charter', serif;          /* Opción 1: Charter (Recomendada) */
+  /* font-family: 'Inter', sans-serif;         /* Opción 1: Inter (Recomendada) */
+  /*  font-family: 'Poppins', sans-serif;     /* Opción 2: Poppins */
+   font-family: 'Nunito Sans', sans-serif;  /* Opción 3: Nunito Sans */
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f1f5f9;
+}
+/* ------------------------------------ */
+
 :root{
   --azul:#014BA0; 
   --madera:#783714; 
@@ -16,3 +31,7 @@
 .input{width:100%;padding:.9rem 1rem;border:1px solid var(--gris-claro);border-radius:12px}
 .input:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(1,75,160,.15)}
 .label{display:block;margin:0 0 .35rem .25rem}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
