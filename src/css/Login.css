@@ -79,7 +79,7 @@
 }
 
 .login-input-group input {
-  width: 100%;
+  width: 90%;
   height: 48px;
   border: 1px solid var(--gris-borde);
   border-radius: 12px;
