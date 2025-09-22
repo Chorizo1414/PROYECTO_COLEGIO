@@ -4,6 +4,45 @@ import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import "./css/SecretaryPayments.css";
 
+// --- NUEVO: Componente para el Modal de Edición de Mensajes ---
+const MessageEditorModal = ({ student, onClose, onSend }) => {
+    const defaultMessage = `Estimado/a ${student.nombre_padre}, le saludamos del Colegio "El Jardín". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${student.nombre_completo} se encuentra pendiente. ¡Gracias!`;
+    const [message, setMessage] = useState(defaultMessage);
+    const [isSending, setIsSending] = useState(false);
+
+    const handleSend = async () => {
+        setIsSending(true);
+        await onSend(message); // Llama a la función que realmente envía el mensaje
+        setIsSending(false);
+        onClose(); // Cierra el modal después de enviar
+    };
+
+    return (
+        <div className="sp-modalMask">
+            <div className="sp-modal">
+                <div className="sp-modalHead">
+                    <h3>Editar Mensaje para <span>{student.nombre_completo}</span></h3>
+                    <button onClick={onClose} className="sp-close">✕</button>
+                </div>
+                <textarea 
+                    value={message} 
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows="5"
+                    className="sp-textarea"
+                />
+                <div className="sp-modalActions">
+                    <button onClick={onClose} className="sp-btn sp-btnGhost">Cancelar</button>
+                    <button onClick={handleSend} className="sp-btn sp-btnPrimary" disabled={isSending}>
+                        {isSending ? 'Enviando...' : 'Guardar y Enviar'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// --- Componente Principal ---
 export default function SecretaryPayments() {
   const navigate = useNavigate();
   const role = auth.getRole();
@@ -13,13 +52,14 @@ export default function SecretaryPayments() {
   const [students, setStudents] = useState([]);
   const [grados, setGrados] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sendingCUI, setSendingCUI] = useState(null);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [grade, setGrade] = useState("Todos los grados");
   const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [message, setMessage] = useState("");
+  
+  // Estados para envíos de WhatsApp
+  const [isSendingAll, setIsSendingAll] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
 
   useEffect(() => {
     const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
@@ -55,6 +95,10 @@ export default function SecretaryPayments() {
     });
   }, [students, grade, query]);
 
+  const studentsWithDebt = useMemo(() => {
+    return students.filter((s) => s.estado_pago === "PENDIENTE");
+  }, [students]);
+
   const totals = useMemo(() => {
     const total = students.length;
     const pendientes = students.filter((s) => s.estado_pago === "PENDIENTE").length;
@@ -81,33 +125,35 @@ export default function SecretaryPayments() {
     }
   };
   
-  const openEditor = (student) => {
-    setEditing(student.cui_estudiante);
-    setMessage(`Estimado padre de familia de ${student.nombre_completo}, le recordamos que el pago está pendiente.`);
-  };
-  const closeEditor = () => setEditing(null);
-  const saveMessage = () => {
-    console.log("Guardando mensaje para CUI", editing, ":", message);
-    closeEditor();
-  };
-  
-  const sendPaymentReminder = async (student) => {
-    if (!window.confirm(`¿Enviar recordatorio de pago por WhatsApp al encargado de ${student.nombre_completo}?`)) return;
-
-    setSendingCUI(student.cui_estudiante); // Bloquear botón y mostrar "Enviando..."
+  // --- LÓGICA DE ENVÍO DE MENSAJES ---
+  const handleSendReminders = async ({ studentCUIs, customMessage = null }) => {
+    const token = localStorage.getItem('accessToken');
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.post('http://localhost:4000/api/notifications/payment-reminder', 
-        { cui_estudiante: student.cui_estudiante },
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      alert(response.data.msg); // <-- Esta alerta te dirá "Mensaje enviado..."
+        const response = await axios.post('http://localhost:4000/api/notifications/payment-reminder', 
+            { studentCUIs, customMessage },
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        alert(response.data.msg);
     } catch (err) {
-      const errorMessage = err.response?.data?.msg || "No se pudo enviar el mensaje.";
-      alert('Error: ' + errorMessage); // <-- O esta si hay un error
-    } finally {
-      setSendingCUI(null); // Desbloquear botón
+        const errorMessage = err.response?.data?.msg || "No se pudo enviar el/los mensaje(s).";
+        alert('Error: ' + errorMessage);
     }
+  };
+
+  const handleSendAll = async () => {
+    if (studentsWithDebt.length === 0) {
+        return alert("No hay estudiantes con pagos pendientes.");
+    }
+    if (!window.confirm(`Se enviará un recordatorio a ${studentsWithDebt.length} encargado(s). ¿Continuar?`)) return;
+
+    setIsSendingAll(true);
+    await handleSendReminders({ studentCUIs: studentsWithDebt.map(s => s.cui_estudiante) });
+    setIsSendingAll(false);
+  };
+
+  const handleSendCustom = async (message) => {
+    if (!editingStudent) return;
+    await handleSendReminders({ studentCUIs: [editingStudent.cui_estudiante], customMessage: message });
   };
   
   if (loading) return <div className="sp-page">Cargando alumnos...</div>;
@@ -116,6 +162,8 @@ export default function SecretaryPayments() {
   return (
     <div className="sp-page">
       <div className="sp-container">
+        {editingStudent && <MessageEditorModal student={editingStudent} onClose={() => setEditingStudent(null)} onSend={handleSendCustom} />}
+        
         <header className="sp-header">
           <h1>Panel de Pagos</h1>
           <p>Gestión de solvencia de estudiantes</p>
@@ -124,6 +172,14 @@ export default function SecretaryPayments() {
         <button onClick={() => navigate(backPath)} className="sp-btn-volver">
           ⬅ Volver al Panel
         </button>
+
+        {isSecretary && (
+            <div className="sp-bulk-actions">
+                <button className="sp-btn sp-btnPrimary" onClick={handleSendAll} disabled={isSendingAll || studentsWithDebt.length === 0}>
+                    {isSendingAll ? 'Enviando...' : `📱 Notificar a ${studentsWithDebt.length} Pendientes`}
+                </button>
+            </div>
+        )}
       
         <section className="sp-stats">
           <h2 className="sp-statsTitle">Resumen de Pagos</h2>
@@ -179,19 +235,14 @@ export default function SecretaryPayments() {
                   </div>
                 </div>
                 
-                {isSecretary && (
+                {isSecretary && s.estado_pago === 'PENDIENTE' && (
                   <div className="sp-actions">
-                    <button 
-                      className="sp-chip sp-chipGreen"
-                      onClick={() => sendPaymentReminder(s)}
-                      disabled={s.estado_pago !== 'PENDIENTE' || sendingCUI === s.cui_estudiante}
-                    >
-                      {sendingCUI === s.cui_estudiante ? 'Enviando...' : '📱 Recordar Pago'}
+                    <button className="sp-chip sp-chipYellow" onClick={() => setEditingStudent(s)}>
+                      ✏️ Editar y Enviar
                     </button>
                     <button 
                       className="sp-chip sp-chipBlue" 
                       onClick={() => markAsSolvent(s.cui_estudiante)}
-                      disabled={s.estado_pago !== 'PENDIENTE'}
                     >
                       ✅ Marcar solvente
                     </button>
@@ -201,27 +252,6 @@ export default function SecretaryPayments() {
             ))}
           </div>
         </section>
-        
-        {editing && (
-          <div className="sp-modalMask">
-              <div className="sp-modal">
-                  <div className="sp-modalHead">
-                    <h3>Editar Mensaje para <span>{students.find(s => s.cui_estudiante === editing)?.nombre_completo}</span></h3>
-                    <button onClick={closeEditor} className="sp-close">✕</button>
-                  </div>
-                  <textarea 
-                      value={message} 
-                      onChange={(e) => setMessage(e.target.value)}
-                      rows="5"
-                      className="sp-textarea"
-                  />
-                  <div className="sp-modalActions">
-                      <button onClick={closeEditor} className="sp-btn sp-btnGhost">Cancelar</button>
-                      <button onClick={saveMessage} className="sp-btn sp-btnPrimary">Guardar y Enviar</button>
-                  </div>
-              </div>
-          </div>
-        )}
       </div>
     </div>
   );

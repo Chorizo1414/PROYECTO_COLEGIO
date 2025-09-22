@@ -3,41 +3,56 @@ const pool = require('../config/db');
 const { sendMessage } = require('../services/whatsappService');
 
 const sendPaymentReminder = async (req, res) => {
-  const { cui_estudiante } = req.body;
+  // Ahora puede recibir una lista de CUIs y un mensaje personalizado opcional
+  const { studentCUIs, customMessage } = req.body;
+
+  if (!studentCUIs || !Array.isArray(studentCUIs) || studentCUIs.length === 0) {
+    return res.status(400).json({ msg: 'Se requiere el CUI del estudiante.' });
+  }
+
   try {
-    // 1. Buscar al padre/encargado principal y su teléfono
-    const parentQuery = `
-      SELECT 
-        p.nombre_completo AS nombre_padre,
-        p.telefono,
-        e.nombres || ' ' || e.apellidos AS nombre_estudiante
-      FROM padres p
-      JOIN alumno_responsable ar ON p.cui_padre = ar.cui_padre
-      JOIN estudiantes e ON ar.cui_estudiante = e.cui_estudiante
-      WHERE ar.cui_estudiante = $1 AND ar.principal = TRUE;
-    `;
-    const result = await pool.query(parentQuery, [cui_estudiante]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ msg: 'No se encontró un encargado principal para este alumno.' });
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const cui of studentCUIs) {
+      // 1. Buscar al padre del estudiante
+      const parentQuery = `
+        SELECT p.nombre_completo AS nombre_padre, p.telefono, e.nombres || ' ' || e.apellidos AS nombre_estudiante
+        FROM padres p
+        JOIN alumno_responsable ar ON p.cui_padre = ar.cui_padre
+        JOIN estudiantes e ON ar.cui_estudiante = e.cui_estudiante
+        WHERE ar.cui_estudiante = $1 AND ar.principal = TRUE;
+      `;
+      const result = await pool.query(parentQuery, [cui]);
+
+      if (result.rows.length > 0) {
+        const { nombre_padre, telefono, nombre_estudiante } = result.rows[0];
+        
+        // 2. Determinar qué mensaje usar
+        let messageToSend = '';
+        if (customMessage) {
+          // Si hay mensaje personalizado, lo usamos
+          messageToSend = customMessage;
+        } else {
+          // Si no, usamos el mensaje por defecto
+          messageToSend = `Estimado/a ${nombre_padre}, le saludamos del Colegio "El Jardín". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${nombre_estudiante} se encuentra pendiente. ¡Gracias!`;
+        }
+
+        // 3. Enviar el mensaje
+        const formattedPhone = telefono.replace(/[^0-9]/g, '');
+        const whatsappResult = await sendMessage(formattedPhone, messageToSend);
+
+        if (whatsappResult.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } else {
+        errorCount++;
+      }
     }
-
-    const { nombre_padre, telefono, nombre_estudiante } = result.rows[0];
-    // Importante: Asegúrate de que el número de teléfono esté en formato internacional (ej: 502xxxxxxxx)
-    const formattedPhone = telefono.replace(/[^0-9]/g, ''); 
-
-    // 2. Crear el mensaje
-    const message = `Estimado/a ${nombre_padre}, le saludamos del Colegio "El Jardín". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${nombre_estudiante} se encuentra pendiente. ¡Gracias!`;
-
-    // 3. Enviar el mensaje usando nuestro servicio
-    const whatsappResult = await sendMessage(formattedPhone, message);
-    if (!whatsappResult.success) {
-      throw new Error('El proveedor de WhatsApp rechazó el envío.');
-    }
-
-    // 4. (Opcional) Guardar un registro del envío en la BD
-    // await pool.query('INSERT INTO whatsapp_envios ...');
-
-    res.status(200).json({ msg: `Mensaje de recordatorio enviado a ${nombre_padre}.` });
+    
+    res.status(200).json({ msg: `Proceso completado. Mensajes enviados: ${successCount}. Errores: ${errorCount}.` });
 
   } catch (error) {
     console.error("Error en el proceso de envío de recordatorio:", error.message);
