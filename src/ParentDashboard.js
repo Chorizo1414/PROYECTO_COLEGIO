@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
-import './css/ParentDashboard.css';
+//import './css/ParentDashboard.css';
 
 export default function ParentDashboard() {
     const [studentData, setStudentData] = useState(null);

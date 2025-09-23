@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import './css/GestionCursos.css';
+//import './css/GestionCursos.css';
 
 export default function GestionCursos() {
     const [cursos, setCursos] = useState([]);

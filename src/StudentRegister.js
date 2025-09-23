@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from 'axios';
-import "./css/StudentRegister.css";
+//import "./css/StudentRegister.css";
 
 export default function StudentRegister() {
   const navigate = useNavigate();

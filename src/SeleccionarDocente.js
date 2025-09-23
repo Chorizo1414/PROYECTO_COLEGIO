@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './css/SeleccionarDocente.css';
+//import './css/SeleccionarDocente.css';
 
 export default function SeleccionarDocente() {
     const [docentes, setDocentes] = useState([]);

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import "./css/ParentRegister.css";
+//import "./css/ParentRegister.css";
 
 export default function ParentRegister() {
   const [form, setForm] = useState({

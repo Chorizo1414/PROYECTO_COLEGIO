@@ -2,7 +2,7 @@ import { auth } from './auth';
 import React, { useState, useEffect, useMemo } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-import "./css/SecretaryPayments.css";
+//import "./css/SecretaryPayments.css";
 
 const MessageEditorModal = ({ student, onClose, onSend }) => {
     const defaultMessage = `Estimado/a ${student.nombre_padre}, le saludamos del Colegio \"El Jardín\". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${student.nombre_completo} se encuentra pendiente. ¡Gracias!`;
