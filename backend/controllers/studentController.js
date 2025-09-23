@@ -255,9 +255,29 @@ const updateFinancialStatus = async (req, res) => {
   }
 };
 
+// --- OBTENER ESTADO DE MOROSIDAD DE UN ESTUDIANTE ---
+const getStudentDebtStatus = async (cui_estudiante) => {
+  try {
+    const query = `
+      SELECT SUM(cuotas_pendientes) as total_cuotas_pendientes
+      FROM mat_jardin.estado_financiero
+      WHERE cui_estudiante = $1 AND estado = 'PENDIENTE';
+    `;
+    const { rows } = await pool.query(query, [cui_estudiante]);
+    if (rows.length > 0 && rows[0].total_cuotas_pendientes) {
+      return parseInt(rows[0].total_cuotas_pendientes, 10);
+    }
+    return 0;
+  } catch (error) {
+    console.error(`Error al verificar la deuda del estudiante ${cui_estudiante}:`, error);
+    // En caso de error, asumimos que no hay deuda para no bloquear por error.
+    return 0;
+  }
+};
 
 // No olvides exportar las nuevas funciones al final del archivo
 module.exports = {
+  getStudentDebtStatus,
   createStudent,
   getAllStudents,
   linkParentToStudent,

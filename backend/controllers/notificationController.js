@@ -1,9 +1,9 @@
 // en backend/controllers/notificationController.js
 const pool = require('../config/db');
 const { sendMessage } = require('../services/whatsappService');
+const { getStudentDebtStatus } = require('./studentController');
 
 const sendPaymentReminder = async (req, res) => {
-  // Ahora puede recibir una lista de CUIs y un mensaje personalizado opcional
   const { studentCUIs, customMessage } = req.body;
 
   if (!studentCUIs || !Array.isArray(studentCUIs) || studentCUIs.length === 0) {
@@ -13,8 +13,21 @@ const sendPaymentReminder = async (req, res) => {
   try {
     let successCount = 0;
     let errorCount = 0;
+    let suspendedCount = 0; // Contador para los suspendidos
 
     for (const cui of studentCUIs) {
+        // --- ¡AQUÍ ESTÁ LA LÓGICA CLAVE! ---
+        // Verificamos cuántos meses debe el estudiante
+        const debtMonths = await getStudentDebtStatus(cui);
+
+        // Si debe 2 o más meses, no enviamos el mensaje.
+        if (debtMonths >= 2) {
+            suspendedCount++;
+            continue; // Pasamos al siguiente estudiante
+        }
+        // --- FIN DE LA LÓGICA CLAVE ---
+
+
       // 1. Buscar al padre del estudiante
       const parentQuery = `
         SELECT p.nombre_completo AS nombre_padre, p.telefono, e.nombres || ' ' || e.apellidos AS nombre_estudiante
@@ -52,7 +65,7 @@ const sendPaymentReminder = async (req, res) => {
       }
     }
     
-    res.status(200).json({ msg: `Proceso completado. Mensajes enviados: ${successCount}. Errores: ${errorCount}.` });
+    res.status(200).json({ msg: `Proceso completado. Mensajes enviados: ${successCount}. Errores: ${errorCount}. Notificaciones suspendidas por morosidad: ${suspendedCount}.` });
 
   } catch (error) {
     console.error("Error en el proceso de envío de recordatorio:", error.message);
@@ -72,9 +85,21 @@ const sendHomeworkReminder = async (req, res) => {
   try {
     let successCount = 0;
     let errorCount = 0;
+    let suspendedCount = 0; // Contador para los suspendidos
 
     // Recorremos cada CUI de estudiante que nos enviaron
     for (const cui of studentCUIs) {
+        // --- ¡AQUÍ ESTÁ LA LÓGICA CLAVE! ---
+        // Verificamos cuántos meses debe el estudiante
+        const debtMonths = await getStudentDebtStatus(cui);
+
+        // Si debe 2 o más meses, no enviamos el mensaje.
+        if (debtMonths >= 2) {
+            suspendedCount++;
+            continue; // Pasamos al siguiente estudiante
+        }
+        // --- FIN DE LA LÓGICA CLAVE ---
+
       // 1. Buscamos al padre del estudiante y su teléfono
       const parentQuery = `
         SELECT p.nombre_completo AS nombre_padre, p.telefono, e.nombres || ' ' || e.apellidos AS nombre_estudiante
@@ -116,7 +141,7 @@ const sendHomeworkReminder = async (req, res) => {
       }
     }
 
-    res.status(200).json({ msg: `Proceso completado. Mensajes enviados: ${successCount}. Errores: ${errorCount}.` });
+    res.status(200).json({ msg: `Proceso completado. Mensajes enviados: ${successCount}. Errores: ${errorCount}. Notificaciones suspendidas por morosidad: ${suspendedCount}.` });
 
   } catch (error) {
     console.error("Error en el proceso de envío de recordatorios de tareas:", error.message);
