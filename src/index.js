@@ -1,6 +1,5 @@
 // Estilos globales y de layout principal
 import './css/index.css';
-import './css/App.css';
 
 // Estilos de componentes de autenticación y navegación
 import './css/Login.css';
