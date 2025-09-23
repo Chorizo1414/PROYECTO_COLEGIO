@@ -13,7 +13,6 @@ export default function AlumnosDashboard() {
 
   const role = auth.getRole();
   const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
-  // <-- CAMBIO: Verificamos si el rol es Coordinador (ID 2)
   const isCoordinator = role === 2;
 
   const fetchData = async () => {
@@ -22,10 +21,14 @@ export default function AlumnosDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       const headers = { Authorization: `Bearer ${token}` };
+      
+      // --- MODIFICACIÓN ---
       const [alumnosRes, seccionesRes] = await Promise.all([
-        axios.get('http://localhost:4000/api/students', { headers }),
-        axios.get('http://localhost:4000/api/grades/sections/all', { headers })
+        axios.get(`${process.env.REACT_APP_API_URL}/api/students`, { headers }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/grades/sections/all`, { headers })
       ]);
+      // --- FIN DE MODIFICACIÓN ---
+      
       setAlumnos(alumnosRes.data);
       setSecciones(seccionesRes.data);
     } catch (err) {
@@ -47,9 +50,11 @@ export default function AlumnosDashboard() {
     setAlumnos(alumnos.map(a => a.cui_estudiante === cui_estudiante ? { ...a, id_seccion: new_id_seccion, nombre_seccion: secciones.find(s => s.id_seccion == new_id_seccion)?.nombre_seccion } : a));
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.put(`http://localhost:4000/api/students/${cui_estudiante}`, updatedData, {
+      // --- MODIFICACIÓN ---
+      await axios.put(`${process.env.REACT_APP_API_URL}/api/students/${cui_estudiante}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      // --- FIN DE MODIFICACIÓN ---
     } catch (error) {
       alert('Error al guardar la sección.');
       fetchData();
@@ -60,7 +65,9 @@ export default function AlumnosDashboard() {
     if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.put(`http://localhost:4000/api/students/deactivate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+        // --- MODIFICACIÓN ---
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/students/deactivate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+        // --- FIN DE MODIFICACIÓN ---
         fetchData();
         alert('Estudiante dado de baja con éxito.');
       } catch (error) {
@@ -73,7 +80,9 @@ export default function AlumnosDashboard() {
     if (window.confirm(`¿Estás seguro de que deseas reactivar a ${nombre}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.put(`http://localhost:4000/api/students/activate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+        // --- MODIFICACIÓN ---
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/students/activate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+        // --- FIN DE MODIFICACIÓN ---
         fetchData();
         alert('Estudiante reactivado con éxito.');
       } catch (error) {
@@ -110,8 +119,6 @@ export default function AlumnosDashboard() {
                   <strong>Grado:</strong> {alumno.nombre_grado || 'No asignado'} <br />
                   <strong>Encargado:</strong> {alumno.nombre_padre || 'No asignado'}
                 </p>
-                
-                {/* <-- CAMBIO: El selector de sección solo se muestra si es Coordinador --> */}
                 {isCoordinator && (
                   <div className="ad-section-selector">
                     <label htmlFor={`seccion-${alumno.cui_estudiante}`}>Sección:</label>
@@ -137,8 +144,6 @@ export default function AlumnosDashboard() {
               </div>
               <div className="ad-card-actions">
                 <button className="ad-chip ad-chip-edit" onClick={() => navigate(`/alumnos/editar/${alumno.cui_estudiante}`)}>✏️ Modificar</button>
-                
-                {/* <-- CAMBIO: Los botones de activar/desactivar solo se muestran si es Coordinador --> */}
                 {isCoordinator && (
                   <>
                     {alumno.estado_id === 1 ? (

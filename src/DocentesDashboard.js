@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './css/DocentesDashboard.css'; // Crearemos este archivo a continuación
+import './css/DocentesDashboard.css';
 
 export default function DocentesDashboard() {
   const [docentes, setDocentes] = useState([]);
@@ -13,7 +13,7 @@ export default function DocentesDashboard() {
     const fetchDocentes = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const res = await axios.get('http://localhost:4000/api/teachers', {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDocentes(res.data);
@@ -28,25 +28,22 @@ export default function DocentesDashboard() {
   }, []);
 
   const handleDeactivate = async (cui, nombre) => {
-  if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}? Esta acción también desactivará su cuenta de usuario.`)) {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.put(`http://localhost:4000/api/teachers/deactivate/${cui}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Actualiza el estado local para que el cambio se vea al instante
-      setDocentes(docentes.map(d =>
-        d.cui_docente.toString() === cui.toString() ? { ...d, estado_id: 2 } : d
-      ));
-
-      alert('Docente dado de baja con éxito.');
-    } catch (error) {
-      const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
-      alert('Error al dar de baja: ' + errorMessage);
+    if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}? Esta acción también desactivará su cuenta de usuario.`)) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/deactivate/${cui}`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDocentes(docentes.map(d =>
+          d.cui_docente.toString() === cui.toString() ? { ...d, estado_id: 2 } : d
+        ));
+        alert('Docente dado de baja con éxito.');
+      } catch (error) {
+        const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
+        alert('Error al dar de baja: ' + errorMessage);
+      }
     }
-  }
-};
+  };
 
   if (loading) return <div className="dd-page"><div>Cargando docentes...</div></div>;
   if (error) return <div className="dd-page"><div className="dd-error">{error}</div></div>;
@@ -58,7 +55,6 @@ export default function DocentesDashboard() {
           <h1>Gestión de Docentes</h1>
           <p>Administra el personal docente del establecimiento</p>
         </header>
-
         <div className="dd-actions-bar">
           <button className="dd-btn dd-btn--secondary" onClick={() => navigate('/coordinator/dashboard')}>
             ⬅ Volver al Panel
@@ -67,7 +63,6 @@ export default function DocentesDashboard() {
             + Registrar Nuevo Docente
           </button>
         </div>
-
         <main className="dd-grid">
           {docentes.map((docente) => (
             <article key={docente.cui_docente} className="dd-card">

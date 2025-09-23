@@ -5,18 +5,14 @@ import './css/AsignarCursos.css';
 
 const AsignarCursos = () => {
   const navigate = useNavigate();
-  // Estados para datos de la API
   const [docentes, setDocentes] = useState([]);
   const [grados, setGrados] = useState([]);
   const [secciones, setSecciones] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
 
-  // --- LÓGICA DE EDICIÓN ---
-  const [editingId, setEditingId] = useState(null); // ID de la asignación que se está editando
-
-  // Estados del formulario
   const initialFormState = {
     cui_docente: '',
     id_grado: '',
@@ -26,15 +22,14 @@ const AsignarCursos = () => {
   };
   const [form, setForm] = useState(initialFormState);
 
-  // Carga inicial de datos
   const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
     try {
       setLoading(true);
       const [docentesRes, gradosRes, asignacionesRes] = await Promise.all([
-        axios.get('http://localhost:4000/api/teachers', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('http://localhost:4000/api/grades', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('http://localhost:4000/api/asignaciones', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/asignaciones`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       setDocentes(docentesRes.data.filter(d => d.estado_id === 1));
       setGrados(gradosRes.data);
@@ -50,13 +45,12 @@ const AsignarCursos = () => {
     fetchData();
   }, []);
 
-  // Cargar secciones y cursos cuando cambia el grado
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (form.id_grado) {
-      axios.get(`http://localhost:4000/api/grades/${form.id_grado}/sections`, { headers: { Authorization: `Bearer ${token}` } })
+      axios.get(`${process.env.REACT_APP_API_URL}/api/grades/${form.id_grado}/sections`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setSecciones(res.data));
-      axios.get(`http://localhost:4000/api/asignaciones/cursos/${form.id_grado}`, { headers: { Authorization: `Bearer ${token}` } })
+      axios.get(`${process.env.REACT_APP_API_URL}/api/asignaciones/cursos/${form.id_grado}`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setCursos(res.data));
     } else {
       setSecciones([]);
@@ -74,50 +68,42 @@ const AsignarCursos = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- FUNCIÓN DE SUBMIT (Crear o Editar) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
-    
-    // Si estamos editando, usa PUT. Si no, usa POST.
     const method = editingId ? 'put' : 'post';
-    const url = `http://localhost:4000/api/asignaciones${editingId ? `/${editingId}` : ''}`;
+    const url = `${process.env.REACT_APP_API_URL}/api/asignaciones${editingId ? `/${editingId}` : ''}`;
 
     try {
       await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
       alert(`Asignación ${editingId ? 'actualizada' : 'creada'} con éxito`);
-      handleCancelEdit(); // Limpiar formulario y estado de edición
-      fetchData(); // Recargar la lista de asignaciones
+      handleCancelEdit();
+      fetchData();
     } catch (error) {
       alert('Error: ' + (error.response?.data?.msg || 'Error inesperado'));
     }
   };
 
-  // --- FUNCIÓN AL CLICKEAR "EDITAR" ---
   const handleEditClick = async (asignacion) => {
       const token = localStorage.getItem('accessToken');
       try {
-          // Llama a la nueva ruta para obtener los datos detallados
-          const { data } = await axios.get(`http://localhost:4000/api/asignaciones/${asignacion.id_asignacion}`, {
+          const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/api/asignaciones/${asignacion.id_asignacion}`, {
               headers: { Authorization: `Bearer ${token}` }
           });
-          
           setEditingId(asignacion.id_asignacion);
-          // Rellena el formulario con los datos recibidos
           setForm({
               cui_docente: data.cui_docente,
               id_grado: data.id_grado,
               id_seccion: data.id_seccion,
-              cursos_ids: data.cursos_ids.map(String), // Asegurarse que sean strings
+              cursos_ids: data.cursos_ids.map(String),
               anio: data.anio
           });
-          window.scrollTo(0, 0); // Sube al inicio de la página para ver el form
+          window.scrollTo(0, 0);
       } catch (error) {
           alert('No se pudieron cargar los datos para editar.');
       }
   };
   
-  // --- FUNCIÓN PARA CANCELAR LA EDICIÓN ---
   const handleCancelEdit = () => {
       setEditingId(null);
       setForm(initialFormState);
@@ -127,7 +113,7 @@ const AsignarCursos = () => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
         const token = localStorage.getItem('accessToken');
         try {
-            await axios.delete(`http://localhost:4000/api/asignaciones/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.delete(`${process.env.REACT_APP_API_URL}/api/asignaciones/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             fetchData();
             alert('Asignación eliminada.');
         } catch (error) {
