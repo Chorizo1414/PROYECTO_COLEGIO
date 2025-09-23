@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
-//import './css/TeacherDashboard.css';
+import './css/TeacherDashboard.css';
 
 const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     const [form, setForm] = useState({

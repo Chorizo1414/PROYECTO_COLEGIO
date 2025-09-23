@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
 import logo from './assets/logo-colegio.png';
-//import "./css/Login.css";
+import "./css/Login.css";
 
 export default function Login() {
   const [username, setUsername] = useState("");

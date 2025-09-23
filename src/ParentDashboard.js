@@ -1,93 +1,144 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { auth } from "./auth";
-//import './css/ParentDashboard.css';
+// En src/ParentDashboard.js
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { auth } from './auth';
+import './css/ParentDashboard.css';
 
-export default function ParentDashboard() {
-    const [studentData, setStudentData] = useState(null);
+const ParentDashboard = () => {
+    const [parents, setParents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editingCui, setEditingCui] = useState(null);
     const navigate = useNavigate();
-    const user = auth.getUser();
+    
+    const role = auth.getRole();
+    const backPath = role === 1 ? '/secretary/dashboard' : '/coordinator/dashboard';
 
-    useEffect(() => {
-        const fetchStudentData = async () => {
-            if (!user || !user.cui_padre) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const token = localStorage.getItem('accessToken');
+    const initialFormState = {
+        cui_padre: '',
+        nombre_completo: '',
+        direccion: '',
+        telefono: ''
+    };
+    const [form, setForm] = useState(initialFormState);
 
-                // --- MODIFICACIÓN ---
-                // para usar en la nube (Render)
-                const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/students/parent/${user.cui_padre}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                // para usar localmente
-                /*
-                const res = await axios.get(`http://localhost:4000/api/students/parent/${user.cui_padre}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                */
-                // --- FIN DE MODIFICACIÓN ---
-                
-                setStudentData(res.data);
-            } catch (error) {
-                console.error("Error fetching student data for parent", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStudentData();
-    }, [user]);
-
-    const logout = () => {
-        if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-            auth.logout();
-            navigate("/login", { replace: true });
+    const fetchData = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await axios.get('http://localhost:4000/api/parents', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setParents(res.data);
+        } catch (error) {
+            console.error("Error al cargar los padres", error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <div className="pd-page">Cargando datos del estudiante...</div>;
-    if (!studentData) return <div className="pd-page">No se encontraron datos del estudiante.</div>;
+    useEffect(() => {
+        fetchData();
+    }, []);
+    
+    const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+    const handleSubmit = async e => {
+        e.preventDefault();
+        const token = localStorage.getItem('accessToken');
+        const method = editingCui ? 'put' : 'post';
+        const url = `http://localhost:4000/api/parents${editingCui ? `/${editingCui}` : ''}`;
+        
+        try {
+            await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
+            alert(`Encargado ${editingCui ? 'actualizado' : 'registrado'} con éxito.`);
+            handleCancelEdit();
+            fetchData();
+        } catch (error) {
+            alert("Error al guardar el encargado.");
+        }
+    };
+
+    const handleEditClick = (parent) => {
+        setEditingCui(parent.cui_padre);
+        setForm(parent);
+        window.scrollTo(0, 0);
+    };
+    
+    const handleCancelEdit = () => {
+        setEditingCui(null);
+        setForm(initialFormState);
+    };
+
+    const handleToggleStatus = async (parent) => {
+        const isActivating = parent.estado_id !== 1;
+        const action = isActivating ? 'activate' : 'deactivate';
+        if (!window.confirm(`¿Estás seguro de que quieres ${isActivating ? 'reactivar' : 'desactivar'} a ${parent.nombre_completo}?`)) return;
+        
+        const token = localStorage.getItem('accessToken');
+        // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+        const url = `http://localhost:4000/api/parents/${action}/${parent.cui_padre}`;
+        
+        try {
+            await axios.put(url, {}, { headers: { Authorization: `Bearer ${token}` } });
+            fetchData();
+        } catch (error) {
+            alert(`Error al ${action} al encargado.`);
+        }
+    };
+
+    if (loading) return <div>Cargando...</div>;
 
     return (
         <div className="pd-page">
             <div className="pd-container">
                 <header className="pd-header">
-                    <h1>Bienvenido, {studentData.parent_name}</h1>
-                    <p>Panel de seguimiento para {studentData.student_name}</p>
+                    <h1>Gestionar Encargados</h1>
+                    <p>Registra, modifica y administra a los padres de familia.</p>
                 </header>
-                <main className="pd-grid">
+                <button className="pd-btn-volver" onClick={() => navigate(backPath)}>
+                    ⬅ Volver al Panel
+                </button>
+                <div className="pd-grid">
                     <div className="pd-card">
-                        <h3>Estado Financiero</h3>
-                        <p className={`pd-status ${studentData.financial_status === 'Solvente' ? 'solvent' : 'pending'}`}>
-                            {studentData.financial_status}
-                        </p>
-                        <p>Cuotas pendientes: <strong>{studentData.pending_fees}</strong></p>
+                        <h2>{editingCui ? 'Editando Encargado' : 'Registrar Nuevo Encargado'}</h2>
+                        <form onSubmit={handleSubmit}>
+                            <input name="cui_padre" value={form.cui_padre} onChange={handleChange} placeholder="CUI del Encargado" required disabled={editingCui} />
+                            <input name="nombre_completo" value={form.nombre_completo} onChange={handleChange} placeholder="Nombre Completo" required />
+                            <input name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" />
+                            <input name="telefono" value={form.telefono} onChange={handleChange} placeholder="Teléfono (con código de país, ej: 502...)" />
+                            <div className="pd-form-actions">
+                                {editingCui && <button type="button" onClick={handleCancelEdit}>Cancelar Edición</button>}
+                                <button type="submit">{editingCui ? 'Guardar Cambios' : 'Registrar Encargado'}</button>
+                            </div>
+                        </form>
                     </div>
-                    <div className="pd-card">
-                        <h3>Tareas Pendientes</h3>
-                        {studentData.pending_tasks.length > 0 ? (
-                            <ul className="pd-task-list">
-                                {studentData.pending_tasks.map(task => (
-                                    <li key={task.id_tarea}>
-                                        {task.titulo} <span>({task.nombre_curso})</span>
-                                        <small> - Entrega: {new Date(task.fecha_entrega).toLocaleDateString()}</small>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p>¡Felicidades! No hay tareas pendientes.</p>
-                        )}
+
+                    <div className="pd-card pd-card--list">
+                        <h2>Encargados Registrados</h2>
+                        <div className="pd-list">
+                            {parents.map(parent => (
+                                <div key={parent.cui_padre} className="pd-list-item">
+                                    <div>
+                                        <strong>{parent.nombre_completo}</strong>
+                                        <small>CUI: {parent.cui_padre} | Tel: {parent.telefono || 'N/A'}</small>
+                                    </div>
+                                    <div className="pd-item-actions">
+                                        <div className={`pd-badge ${parent.estado_id === 1 ? 'active' : 'inactive'}`}>
+                                            {parent.estado_id === 1 ? 'Activo' : 'Inactivo'}
+                                        </div>
+                                        <button onClick={() => handleEditClick(parent)}>✏️</button>
+                                        <button onClick={() => handleToggleStatus(parent)}>
+                                            {parent.estado_id === 1 ? '🗑️' : '⬆️'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </main>
-                <footer className="pd-footer">
-                    <button onClick={logout} className="pd-logout-btn">Cerrar Sesión</button>
-                </footer>
+                </div>
             </div>
         </div>
     );
-}
+};
+
+export default ParentDashboard;

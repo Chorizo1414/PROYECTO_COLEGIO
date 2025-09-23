@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from 'axios';
-//import "./css/EditarDocente.css";
+import "./css/EditarDocente.css";
 
 export default function EditarDocente() {
     const { cui } = useParams();

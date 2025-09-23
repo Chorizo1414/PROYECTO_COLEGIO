@@ -2,7 +2,7 @@ import { auth } from './auth';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-//import './css/AlumnosDashboard.css';
+import './css/AlumnosDashboard.css';
 
 export default function AlumnosDashboard() {
   const [alumnos, setAlumnos] = useState([]);
