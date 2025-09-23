@@ -16,6 +16,7 @@ import ParentRegister from "./ParentRegister";
 import SecretaryPayments from "./SecretaryPayments";
 import SeleccionarDocente from "./SeleccionarDocente";
 import ParentDashboard from './ParentDashboard';
+import './css/App.css';
 
 export default function App() {
   return (
