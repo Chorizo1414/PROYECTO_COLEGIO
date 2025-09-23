@@ -4,7 +4,6 @@ import axios from "axios";
 import { auth } from "./auth";
 import './css/TeacherDashboard.css';
 
-// --- Componente TaskModal actualizado para Crear y Editar ---
 const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     const [form, setForm] = useState({
         titulo: '',
@@ -12,17 +11,14 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
         id_curso: ''
     });
 
-    // Si estamos editando, llenamos el formulario con los datos de la tarea
     useEffect(() => {
         if (taskToEdit) {
             setForm({
                 titulo: taskToEdit.titulo,
-                // Formateamos la fecha para el input type="date" (YYYY-MM-DD)
                 fecha_entrega: new Date(taskToEdit.fecha_entrega).toISOString().split('T')[0],
                 id_curso: taskToEdit.id_curso
             });
         } else if (courses && courses.length > 0) {
-            // Si creamos una nueva, preseleccionamos el primer curso
             setForm(prev => ({ titulo: '', fecha_entrega: '', id_curso: courses[0].id_curso }));
         }
     }, [taskToEdit, courses]);
@@ -32,53 +28,58 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.titulo.trim() || !form.fecha_entrega || !form.id_curso) {
-            alert("Por favor, complete todos los campos.");
+            alert('Todos los campos son obligatorios.');
             return;
         }
         
-        const token = localStorage.getItem("accessToken");
-        const method = taskToEdit ? 'put' : 'post';
-        const url = `http://localhost:4000/api/teachers/tasks${taskToEdit ? `/${taskToEdit.id_tarea}` : ''}`;
-        const payload = taskToEdit ? form : { ...form, id_asignacion: assignmentId };
-
+        const token = localStorage.getItem('accessToken');
         try {
-            const res = await axios[method](url, payload, { headers: { Authorization: `Bearer ${token}` } });
-            onSave(res.data, !!taskToEdit); // Enviamos el dato y un booleano que indica si fue una edición
-        } catch (err) {
-            alert("Error al guardar la tarea: " + (err.response?.data?.msg || err.message));
+            if (taskToEdit) {
+                // --- MODIFICACIÓN ---
+                await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/tasks/${taskToEdit.id_tarea}`, 
+                    { ...form, id_asignacion: assignmentId }, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                /*
+                await axios.put(`http://localhost:4000/api/teachers/tasks/${taskToEdit.id_tarea}`, 
+                    { ...form, id_asignacion: assignmentId }, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                */
+                // --- FIN DE MODIFICACIÓN ---
+            } else {
+                // --- MODIFICACIÓN ---
+                await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}/tasks`, 
+                    form, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                /*
+                await axios.post(`http://localhost:4000/api/teachers/assignments/${assignmentId}/tasks`, 
+                    form, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                */
+                // --- FIN DE MODIFICACIÓN ---
+            }
+            onSave();
+        } catch (error) {
+            alert('Error al guardar la tarea.');
         }
     };
 
     return (
-        <div className="tdb-modal">
-            <div className="tdb-modalCard">
-                <div className="tdb-modalHeader">
-                    <h3>{taskToEdit ? '✏️ Editar Tarea' : '➕ Nueva Tarea'}</h3>
-                    <button className="tdb-x" onClick={onClose}>✕</button>
-                </div>
+        <div className="tdb-modal-backdrop">
+            <div className="tdb-modal">
+                <h2>{taskToEdit ? 'Editar Tarea' : 'Nueva Tarea'}</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className="tdb-form">
-                        <div className="tdb-formCol">
-                            <label className="tdb-label">Curso</label>
-                            <select name="id_curso" className="tdb-select" value={form.id_curso} onChange={handleChange} required>
-                                <option value="" disabled>-- Seleccione un curso --</option>
-                                {courses.map(c => (
-                                    <option key={c.id_curso} value={c.id_curso}>{c.nombre_curso}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="tdb-formCol">
-                            <label className="tdb-label">Título de la tarea</label>
-                            <input name="titulo" className="tdb-input" value={form.titulo} onChange={handleChange} required />
-                        </div>
-                        <div className="tdb-formCol">
-                            <label className="tdb-label">Fecha de entrega</label>
-                            <input name="fecha_entrega" type="date" className="tdb-input" value={form.fecha_entrega} onChange={handleChange} required />
-                        </div>
-                    </div>
-                    <div className="tdb-modalActions">
-                        <button type="button" className="tdb-btn tdb-btn--secondary" onClick={onClose}>Cancelar</button>
-                        <button type="submit" className="tdb-btn tdb-btn--primary">Guardar Tarea</button>
+                    <select name="id_curso" value={form.id_curso} onChange={handleChange} required>
+                        {courses.map(c => <option key={c.id_curso} value={c.id_curso}>{c.nombre_curso}</option>)}
+                    </select>
+                    <input name="titulo" value={form.titulo} onChange={handleChange} placeholder="Título de la tarea" required />
+                    <input name="fecha_entrega" type="date" value={form.fecha_entrega} onChange={handleChange} required />
+                    <div className="tdb-modal-actions">
+                        <button type="button" onClick={onClose}>Cancelar</button>
+                        <button type="submit">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -86,285 +87,220 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     );
 };
 
-
-// --- Componente Principal ---
 export default function TeacherDashboard() {
+  const { id_asignacion: paramId } = useParams();
   const navigate = useNavigate();
-  const { cui } = useParams();
-
-  const [assignments, setAssignments] = useState([]);
-  const [currentAssignmentId, setCurrentAssignmentId] = useState("");
-  const [currentCourses, setCurrentCourses] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [deliveries, setDeliveries] = useState({});
-  const [loading, setLoading] = useState({ assignments: true, data: false });
-  const [error, setError] = useState(null);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [teacherInfo, setTeacherInfo] = useState(null);
-  
-  const [isSendingAll, setIsSendingAll] = useState(false);
+  const [userAssignments, setUserAssignments] = useState([]);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState(paramId || '');
+  const [data, setData] = useState({ grado: '', seccion: '', anio: '', cursos: [], students: [], tasks: [], deliveries: {} });
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
   const [sendingCui, setSendingCui] = useState(null);
-  const [editingTask, setEditingTask] = useState(null); // <-- Nuevo estado para la tarea en edición
+  
+  const role = auth.getRole();
+  const isCoordinatorView = role === 2;
 
-  const loggedInUser = auth.getUser();
-  const isCoordinatorView = !!cui;
-  const targetCui = cui || loggedInUser?.cui_docente;
-
-  const handleSendReminders = async (studentCuis = []) => {
-    let studentsToNotify = [];
-    let confirmationMessage = "";
-
-    if (studentCuis.length > 0) {
-      const student = students.find(s => s.cui_estudiante === studentCuis[0]);
-      studentsToNotify = [{ cui_estudiante: student.cui_estudiante }];
-      confirmationMessage = `Se enviará un reporte de tareas pendientes a los encargados de ${student.nombres} ${student.apellidos}. ¿Continuar?`;
-    } else {
-      studentsToNotify = students.filter(student =>
-        tasks.some(task => !deliveries[student.cui_estudiante]?.[task.id_tarea])
-      );
-      if (studentsToNotify.length === 0) {
-        return alert("Todos los estudiantes están al día con sus tareas en esta asignación.");
-      }
-      confirmationMessage = `Se enviarán reportes a los ${studentsToNotify.length} encargados de estudiantes con tareas pendientes. ¿Continuar?`;
-    }
-
-    if (!window.confirm(confirmationMessage)) return;
-    
-    if (studentCuis.length > 0) setSendingCui(studentCuis[0]);
-    else setIsSendingAll(true);
-
-    try {
-      const token = localStorage.getItem("accessToken");
-      const payload = {
-        studentCUIs: studentsToNotify.map(s => s.cui_estudiante),
-        assignmentId: currentAssignmentId
-      };
-      const res = await axios.post("http://localhost:4000/api/notifications/homework-reminder", payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert(res.data.msg);
-    } catch (err) {
-      alert("Error al enviar las notificaciones: " + (err.response?.data?.msg || err.message));
-    } finally {
-      if (studentCuis.length > 0) setSendingCui(null);
-      else setIsSendingAll(false);
-    }
-  };
-
-  const fetchData = useCallback(async () => {
-    if (!targetCui) {
-      setError("No se pudo identificar al docente.");
-      setLoading({ assignments: false, data: false });
+  const fetchData = useCallback(async (assignmentId) => {
+    if (!assignmentId) {
+      setLoading(false);
       return;
     }
-    setLoading(p => ({ ...p, assignments: true }));
+    setLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      const [teacherRes, assignmentsRes] = await Promise.all([
-          axios.get(`http://localhost:4000/api/teachers/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`http://localhost:4000/api/teachers/assignments/${targetCui}`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-      setTeacherInfo(teacherRes.data);
-      setAssignments(assignmentsRes.data);
-      if (assignmentsRes.data.length > 0) {
-        setCurrentAssignmentId(assignmentsRes.data[0].id_asignacion);
-      } else {
-        setCurrentAssignmentId("");
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("No se pudieron cargar los datos del docente.");
+      const token = localStorage.getItem('accessToken');
+      
+      // --- MODIFICACIÓN ---
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      /*
+      const res = await axios.get(`http://localhost:4000/api/teachers/assignments/${assignmentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      */
+      // --- FIN DE MODIFICACIÓN ---
+      
+      setData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch assignment data", error);
+      alert('Error al cargar datos de la asignación.');
     } finally {
-      setLoading(p => ({ ...p, assignments: false }));
+      setLoading(false);
     }
-  }, [targetCui]);
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const loadInitialData = async () => {
+        const token = localStorage.getItem('accessToken');
+        const user = auth.getUser();
+        let assignments = [];
+        if (isCoordinatorView && paramId) {
+          assignments.push({ id_asignacion: paramId, description: 'Vista Coordinador' });
+        } else if(user?.cui_docente) {
+          // --- MODIFICACIÓN ---
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${user.cui_docente}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
+          /*
+          const res = await axios.get(`http://localhost:4000/api/teachers/${user.cui_docente}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
+          */
+          // --- FIN DE MODIFICACIÓN ---
+          assignments = res.data;
+        }
+        setUserAssignments(assignments);
+        if (paramId) {
+            setSelectedAssignmentId(paramId);
+            fetchData(paramId);
+        } else if(assignments.length > 0) {
+            setSelectedAssignmentId(assignments[0].id_asignacion);
+            fetchData(assignments[0].id_asignacion);
+        } else {
+            setLoading(false);
+        }
+    };
+    loadInitialData();
+  }, [paramId, isCoordinatorView, fetchData]);
 
-  const fetchAssignmentData = useCallback(async () => {
-    if (!currentAssignmentId) {
-        setStudents([]); setTasks([]); setDeliveries({}); setCurrentCourses([]); return;
-    }
-    setLoading(p => ({ ...p, data: true }));
-    setError(null);
-    try {
-      const token = localStorage.getItem("accessToken");
-      const res = await axios.get(`http://localhost:4000/api/teachers/assignment-data/${currentAssignmentId}`, { headers: { Authorization: `Bearer ${token}` } });
-      setCurrentCourses(res.data.courses || []);
-      setStudents(res.data.students);
-      setTasks(res.data.tasks);
-      setDeliveries(res.data.deliveries || {});
-    } catch (err) {
-      console.error(`Error fetching assignment data`, err);
-      setError("No se pudieron cargar los datos de la asignación.");
-    } finally {
-      setLoading(p => ({ ...p, data: false }));
-    }
-  }, [currentAssignmentId]);
-  
-  useEffect(() => { fetchAssignmentData(); }, [fetchAssignmentData]);
-
-  const handleCheckChange = (studentId, taskId) => {
-    if(isCoordinatorView) return;
-    setDeliveries(prev => {
-      const studentDeliveries = { ...(prev[studentId] || {}) };
-      studentDeliveries[taskId] = !studentDeliveries[taskId];
-      return { ...prev, [studentId]: studentDeliveries };
-    });
-  };
-  
-  const handleSaveDeliveries = async () => {
-    const payload = [];
-    Object.keys(deliveries).forEach(cui_estudiante => {
-        Object.keys(deliveries[cui_estudiante]).forEach(id_tarea => {
-            payload.push({ cui_estudiante, id_tarea, entregado: !!deliveries[cui_estudiante][id_tarea] });
-        });
-    });
-    if (payload.length === 0) return alert("No hay cambios para guardar.");
-    try {
-      const token = localStorage.getItem("accessToken");
-      await axios.post("http://localhost:4000/api/teachers/deliveries", { deliveries: payload }, { headers: { Authorization: `Bearer ${token}` } });
-      alert("¡Progreso guardado con éxito!");
-    } catch(err) {
-        console.error("Error saving deliveries", err);
-        alert("Hubo un error al guardar el progreso.");
-    }
+  const handleAssignmentChange = (e) => {
+    const newId = e.target.value;
+    setSelectedAssignmentId(newId);
+    if(newId) fetchData(newId);
+    else setData({ grado: '', seccion: '', anio: '', cursos: [], students: [], tasks: [], deliveries: {} });
   };
 
-  const handleTaskSaved = (savedTask, isUpdate) => {
-    if (isUpdate) {
-        setTasks(prevTasks => prevTasks.map(task => 
-            task.id_tarea === savedTask.id_tarea ? savedTask : task
-        ).sort((a, b) => new Date(b.fecha_entrega) - new Date(a.fecha_entrega)));
-    } else {
-        setTasks(prev => [...prev, savedTask].sort((a, b) => new Date(b.fecha_entrega) - new Date(a.fecha_entrega)));
+  const handleCheckChange = async (cui_estudiante, id_tarea) => {
+    const entregado = !data.deliveries[cui_estudiante]?.[id_tarea];
+    setData(prev => ({
+      ...prev,
+      deliveries: {
+        ...prev.deliveries,
+        [cui_estudiante]: { ...(prev.deliveries[cui_estudiante] || {}), [id_tarea]: entregado }
+      }
+    }));
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const payload = { cui_estudiante, id_tarea, entregado };
+      // --- MODIFICACIÓN ---
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${selectedAssignmentId}/deliveries`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      /*
+      await axios.post(`http://localhost:4000/api/teachers/assignments/${selectedAssignmentId}/deliveries`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      */
+      // --- FIN DE MODIFICACIÓN ---
+    } catch (error) {
+      alert('Error al guardar, por favor intente de nuevo.');
+      fetchData(selectedAssignmentId);
     }
-    setShowTaskModal(false);
-    setEditingTask(null);
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm("¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.")) {
-        return;
-    }
+  const handleSendReminders = async (studentCUIs) => {
+    if (sendingCui && studentCUIs.length === 1) return;
+    if (studentCUIs.length === 1) setSendingCui(studentCUIs[0]);
+
     try {
-        const token = localStorage.getItem("accessToken");
-        await axios.delete(`http://localhost:4000/api/teachers/tasks/${taskId}`, {
+        const token = localStorage.getItem('accessToken');
+        const payload = {
+            studentCUIs: studentCUIs,
+            assignmentId: selectedAssignmentId
+        };
+        // --- MODIFICACIÓN ---
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/notifications/homework-reminder`, payload, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        setTasks(prevTasks => prevTasks.filter(task => task.id_tarea !== taskId));
-        alert("Tarea eliminada con éxito.");
-    } catch (err) {
-        alert("Error al eliminar la tarea.");
+        /*
+        const res = await axios.post(`http://localhost:4000/api/notifications/homework-reminder`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+        alert(res.data.msg);
+    } catch (error) {
+        alert("Error al enviar recordatorios.");
+    } finally {
+        if (studentCUIs.length === 1) setSendingCui(null);
+    }
+  };
+  
+  const handleTaskDelete = async (taskId) => {
+    if (window.confirm("¿Seguro que quieres eliminar esta tarea? Se borrarán también las entregas asociadas.")) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        // --- MODIFICACIÓN ---
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/teachers/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
+        /*
+        await axios.delete(`http://localhost:4000/api/teachers/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+        fetchData(selectedAssignmentId);
+      } catch (error) {
+        alert('Error al eliminar la tarea.');
+      }
     }
   };
 
-  const logout = () => {
-      if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-          auth.logout();
-          navigate("/login", { replace: true });
-      }
-  };
-
-  const groupedTasks = useMemo(() => {
-    return tasks.reduce((acc, task) => {
-      const courseName = task.nombre_curso || 'General';
-      if (!acc[courseName]) {
-        acc[courseName] = [];
-      }
-      acc[courseName].push(task);
-      return acc;
-    }, {});
-  }, [tasks]);
+  const { students, tasks, deliveries } = data;
+  const backPath = isCoordinatorView ? '/coordinator/dashboard' : '/panel';
+  
+  const sortedTasks = useMemo(() => [...tasks].sort((a,b) => new Date(a.fecha_entrega) - new Date(b.fecha_entrega)), [tasks]);
 
   return (
     <div className="tdb-page">
+      {isModalOpen && <TaskModal assignmentId={selectedAssignmentId} courses={data.cursos} taskToEdit={taskToEdit} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); }} onSave={() => { setIsModalOpen(false); setTaskToEdit(null); fetchData(selectedAssignmentId); }} />}
       <div className="tdb-container">
-        {(showTaskModal || editingTask) && (
-            <TaskModal 
-                assignmentId={currentAssignmentId} 
-                courses={currentCourses}
-                taskToEdit={editingTask} 
-                onClose={() => { setShowTaskModal(false); setEditingTask(null); }} 
-                onSave={handleTaskSaved} 
-            />
-        )}
-        
         <header className="tdb-header">
-          <h1>Panel de Docente: {teacherInfo?.nombre_completo || 'Cargando...'}</h1>
-          <p>Seguimiento y control de tareas</p>
+          <h1>Panel del Docente</h1>
+          <button className="tdb-back-btn" onClick={() => navigate(backPath)}>Volver</button>
         </header>
+        
+        {!isCoordinatorView && (
+          <div className="tdb-assignment-selector">
+            <label htmlFor="assignment-select">Mis Asignaciones:</label>
+            <select id="assignment-select" value={selectedAssignmentId} onChange={handleAssignmentChange}>
+              <option value="">-- Seleccione una --</option>
+              {userAssignments.map(a => <option key={a.id_asignacion} value={a.id_asignacion}>{a.description}</option>)}
+            </select>
+          </div>
+        )}
 
-        <div className="tdb-actions-bar">
-          {isCoordinatorView ? (
-            <button className="tdb-btn tdb-btn--secondary" onClick={() => navigate('/seleccionar-docente')}>⬅ Volver a la Selección</button>
-          ) : (
-            <button className="tdb-btn tdb-btn--danger" onClick={logout}>🚪 Cerrar Sesión</button>
-          )}
-
-          {!isCoordinatorView && (
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-              <button className="tdb-btn tdb-btn--secondary" onClick={() => setShowTaskModal(true)} disabled={!currentAssignmentId}>+ Nueva Tarea</button>
-              <button className="tdb-btn tdb-btn--primary" onClick={handleSaveDeliveries}>💾 Guardar Cambios</button>
-              <button className="tdb-btn tdb-btn--whatsapp" onClick={() => handleSendReminders()} disabled={isSendingAll || !currentAssignmentId}>
-                {isSendingAll ? 'Enviando...' : '📱 Notificar Pendientes'}
-              </button>
+        {selectedAssignmentId && (
+          <div className="tdb-content">
+            <div className="tdb-info-header">
+              <h2>{data.grado} {data.seccion} ({data.anio})</h2>
+              {!isCoordinatorView && <button className="tdb-add-task-btn" onClick={() => setIsModalOpen(true)}>+ Nueva Tarea</button>}
             </div>
-          )}
-        </div>
-
-        {loading.assignments ? <p>Cargando...</p> : error ? <p style={{color: 'red'}}>{error}</p> : (
-          <div className="tdb-card">
-            <h2 className="tdb-card-title">Seguimiento de Tareas</h2>
-            <div className="tdb-controls">
-              <div className="tdb-control-group">
-                <label htmlFor="curso-select" className="tdb-label">Asignación</label>
-                <select id="curso-select" className="tdb-select" value={currentAssignmentId} onChange={(e) => setCurrentAssignmentId(e.target.value)} disabled={assignments.length === 0}>
-                  {assignments.length === 0 ? <option>No tienes asignaciones</option> : assignments.map((a) => (
-                    <option key={a.id_asignacion} value={a.id_asignacion}>
-                      {a.nombre_grado} - {a.nombre_seccion} ({a.cursos ? a.cursos.join(', ') : '...'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {loading.data ? <p>Cargando alumnos...</p> : (
-              <div className="tdb-track-wrapper">
-                <table className="tdb-matrix">
+            {loading ? <p>Cargando datos...</p> : (
+              <div className="tdb-table-container">
+                <table className="tdb-table">
                   <thead>
                     <tr>
-                      <th rowSpan="2" className="student-name">Alumno</th>
-                      {Object.entries(groupedTasks).map(([courseName, courseTasks]) => (
-                        <th key={courseName} colSpan={courseTasks.length} className="tdb-course-header">{courseName}</th>
-                      ))}
-                      <th rowSpan="2" className="tdb-action-header">Acción</th>
-                    </tr>
-                    <tr>
-                      {tasks.map((t) => (
-                        <th key={t.id_tarea} className="tdb-task-header">
-                          <div className="tdb-task-title">
-                            <span className="title" title={t.titulo}>{t.titulo}</span>
-                            {!isCoordinatorView && (
-                              <div className="tdb-task-actions">
-                                <button onClick={() => setEditingTask(t)} title="Editar tarea">✏️</button>
-                                <button onClick={() => handleDeleteTask(t.id_tarea)} title="Eliminar tarea">🗑️</button>
-                              </div>
-                            )}
-                          </div>
-                          <span className="date">{new Date(t.fecha_entrega).toLocaleDateString()}</span>
+                      <th className="student-name-header">Estudiante</th>
+                      {sortedTasks.map((t) => (
+                        <th key={t.id_tarea} className="task-header">
+                          <div className="task-title">{t.titulo} <span className="task-course">({t.nombre_curso})</span></div>
+                          <div className="task-date">{new Date(t.fecha_entrega).toLocaleDateString()}</div>
+                          {!isCoordinatorView && (
+                            <div className="task-actions">
+                              <button onClick={() => { setTaskToEdit(t); setIsModalOpen(true); }}>✏️</button>
+                              <button onClick={() => handleTaskDelete(t.id_tarea)}>🗑️</button>
+                            </div>
+                          )}
                         </th>
                       ))}
+                      <th className="tdb-action-header">
+                        {!isCoordinatorView && (
+                           <button className="tdb-btn-icon" onClick={() => handleSendReminders(students.map(s => s.cui_estudiante))} title="Enviar recordatorio a todos">💬 Todos</button>
+                        )}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {students.map((s) => (
                       <tr key={s.cui_estudiante}>
                         <td className="student-name"><span>{s.apellidos}, {s.nombres}</span></td>
-                        {tasks.map((t) => (
+                        {sortedTasks.map((t) => (
                           <td key={`${s.cui_estudiante}-${t.id_tarea}`} className="task-check">
                             <input className="tdb-checkbox" type="checkbox" checked={!!deliveries[s.cui_estudiante]?.[t.id_tarea]} onChange={() => handleCheckChange(s.cui_estudiante, t.id_tarea)} disabled={isCoordinatorView} />
                           </td>

@@ -9,21 +9,34 @@ export default function DocentesDashboard() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const fetchDocentes = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      // --- MODIFICACIÓN ---
+      // para usar en la nube (Render)
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // para usar localmente
+      /*
+      const res = await axios.get('http://localhost:4000/api/teachers', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      */
+      // --- FIN DE MODIFICACIÓN ---
+      
+      setDocentes(res.data);
+    } catch (err) {
+      setError('No se pudieron cargar los docentes. Inténtelo de nuevo.');
+      console.error('Error fetching teachers', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    const fetchDocentes = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setDocentes(res.data);
-      } catch (err) {
-        setError('No se pudieron cargar los docentes. Inténtelo de nuevo.');
-        console.error('Error fetching teachers', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDocentes();
   }, []);
 
@@ -31,16 +44,26 @@ export default function DocentesDashboard() {
     if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}? Esta acción también desactivará su cuenta de usuario.`)) {
       try {
         const token = localStorage.getItem('accessToken');
+        
+        // --- MODIFICACIÓN ---
+        // para usar en la nube (Render)
         await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/deactivate/${cui}`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setDocentes(docentes.map(d =>
-          d.cui_docente.toString() === cui.toString() ? { ...d, estado_id: 2 } : d
-        ));
+
+        // para usar localmente
+        /*
+        await axios.put(`http://localhost:4000/api/teachers/deactivate/${cui}`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+
+        fetchDocentes(); // Recargar la lista
         alert('Docente dado de baja con éxito.');
       } catch (error) {
-        const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
-        alert('Error al dar de baja: ' + errorMessage);
+        alert('Error al dar de baja al docente.');
+        console.error('Error deactivating teacher', error);
       }
     }
   };
@@ -53,8 +76,9 @@ export default function DocentesDashboard() {
       <div className="dd-container">
         <header className="dd-header">
           <h1>Gestión de Docentes</h1>
-          <p>Administra el personal docente del establecimiento</p>
+          <p>Administra al personal docente del colegio</p>
         </header>
+
         <div className="dd-actions-bar">
           <button className="dd-btn dd-btn--secondary" onClick={() => navigate('/coordinator/dashboard')}>
             ⬅ Volver al Panel

@@ -4,17 +4,16 @@ import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import "./css/SecretaryPayments.css";
 
-// --- NUEVO: Componente para el Modal de Edición de Mensajes ---
 const MessageEditorModal = ({ student, onClose, onSend }) => {
-    const defaultMessage = `Estimado/a ${student.nombre_padre}, le saludamos del Colegio "El Jardín". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${student.nombre_completo} se encuentra pendiente. ¡Gracias!`;
+    const defaultMessage = `Estimado/a ${student.nombre_padre}, le saludamos del Colegio \"El Jardín\". Le recordamos amablemente que el pago de la colegiatura para el/la estudiante ${student.nombre_completo} se encuentra pendiente. ¡Gracias!`;
     const [message, setMessage] = useState(defaultMessage);
     const [isSending, setIsSending] = useState(false);
 
     const handleSend = async () => {
         setIsSending(true);
-        await onSend(message); // Llama a la función que realmente envía el mensaje
+        await onSend(message);
         setIsSending(false);
-        onClose(); // Cierra el modal después de enviar
+        onClose();
     };
 
     return (
@@ -30,10 +29,10 @@ const MessageEditorModal = ({ student, onClose, onSend }) => {
                     rows="5"
                     className="sp-textarea"
                 />
-                <div className="sp-modalActions">
-                    <button onClick={onClose} className="sp-btn sp-btnGhost">Cancelar</button>
-                    <button onClick={handleSend} className="sp-btn sp-btnPrimary" disabled={isSending}>
-                        {isSending ? 'Enviando...' : 'Guardar y Enviar'}
+                <div className="sp-modalFoot">
+                    <button onClick={onClose} className="sp-btn sp-btn--ghost">Cancelar</button>
+                    <button onClick={handleSend} disabled={isSending} className="sp-btn sp-btn--primary">
+                        {isSending ? "Enviando..." : "Enviar Recordatorio"}
                     </button>
                 </div>
             </div>
@@ -41,183 +40,150 @@ const MessageEditorModal = ({ student, onClose, onSend }) => {
     );
 };
 
-
-// --- Componente Principal ---
 export default function SecretaryPayments() {
-  const navigate = useNavigate();
-  const role = auth.getRole();
-  const backPath = role === 2 ? '/coordinator/dashboard' : '/secretary/dashboard';
-  const isSecretary = role === 1;
-
   const [students, setStudents] = useState([]);
-  const [grados, setGrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [grade, setGrade] = useState("Todos los grados");
-  const [query, setQuery] = useState("");
-  
-  // Estados para envíos de WhatsApp
-  const [isSendingAll, setIsSendingAll] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingStudent, setEditingStudent] = useState(null);
+  const navigate = useNavigate();
+  const role = auth.getRole();
+  const isSecretary = role === 3;
+  const backPath = isSecretary ? '/secretary/dashboard' : '/coordinator/dashboard';
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      
+      // --- MODIFICACIÓN ---
+      // para usar en la nube (Render)
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/students/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // para usar localmente
+      /*
+      const res = await axios.get("http://localhost:4000/api/students/details", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      */
+      // --- FIN DE MODIFICACIÓN ---
+      
+      setStudents(res.data);
+    } catch (err) {
+      setError("No se pudieron cargar los datos de los estudiantes.");
+      console.error("Error fetching students:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const token = auth.isLogged() ? localStorage.getItem('accessToken') : null;
-    if (!token) {
-      alert("Sesión no válida. Por favor, inicie sesión de nuevo.");
-      return navigate('/login');
-    }
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [studentsResponse, gradesResponse] = await Promise.all([
-          axios.get('http://localhost:4000/api/students/details', { headers: { 'Authorization': `Bearer ${token}` } }),
-          axios.get('http://localhost:4000/api/grades', { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
-        setStudents(studentsResponse.data);
-        setGrados(gradesResponse.data);
-      } catch (err) {
-        setError('Error al cargar los datos.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [navigate, refreshKey]);
-
-  const filtered = useMemo(() => {
-    return students.filter((s) => {
-      const byGrade = grade === "Todos los grados" ? true : s.nombre_grado === grade;
-      const byQuery = s.nombre_completo.toLowerCase().includes(query.trim().toLowerCase());
-      return byGrade && byQuery;
-    });
-  }, [students, grade, query]);
-
-  const studentsWithDebt = useMemo(() => {
-    return students.filter((s) => s.estado_pago === "PENDIENTE");
-  }, [students]);
-
-  const totals = useMemo(() => {
-    const total = students.length;
-    const pendientes = students.filter((s) => s.estado_pago === "PENDIENTE").length;
-    const alDia = total - pendientes;
-    return { total, pendientes, alDia };
-  }, [students]);
+  }, []);
 
   const markAsSolvent = async (cui_estudiante) => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    if (!window.confirm(`¿Deseas marcar como solvente al alumno para el período ${currentMonth}?`)) {
-      return;
-    }
-    const token = localStorage.getItem('accessToken');
-    try {
-      await axios.post('http://localhost:4000/api/students/financial-status', 
-        { cui_estudiante, periodo: currentMonth },
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      alert('¡Alumno marcado como solvente!');
-      setRefreshKey(oldKey => oldKey + 1);
-    } catch (err) {
-      const errorMessage = err.response?.data?.msg || err.message;
-      alert('Error al actualizar: ' + errorMessage);
+    if (window.confirm("¿Confirmas que el estudiante está solvente para el mes actual?")) {
+      try {
+        const token = localStorage.getItem('accessToken');
+
+        // --- MODIFICACIÓN ---
+        // para usar en la nube (Render)
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/students/financial-status/${cui_estudiante}`, 
+          { estado: 'Solvente' }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // para usar localmente
+        /*
+        await axios.put(`http://localhost:4000/api/students/financial-status/${cui_estudiante}`, 
+          { estado: 'Solvente' }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        */
+        // --- FIN DE MODIFICACIÓN ---
+        
+        alert("Estado actualizado a solvente.");
+        fetchData();
+      } catch (err) {
+        alert("Error al actualizar el estado.");
+        console.error("Error updating status:", err);
+      }
     }
   };
-  
-  // --- LÓGICA DE ENVÍO DE MENSAJES ---
-  const handleSendReminders = async ({ studentCUIs, customMessage = null }) => {
-    const token = localStorage.getItem('accessToken');
+
+  const sendReminder = async (customMessage) => {
     try {
-        const response = await axios.post('http://localhost:4000/api/notifications/payment-reminder', 
-            { studentCUIs, customMessage },
-            { headers: { 'Authorization': `Bearer ${token}` } }
-        );
+        const token = localStorage.getItem('accessToken');
+        const payload = {
+            studentCUIs: [editingStudent.cui_estudiante],
+            customMessage: customMessage
+        };
+
+        // --- MODIFICACIÓN ---
+        // para usar en la nube (Render)
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/notifications/payment-reminder`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // para usar localmente
+        /*
+        const response = await axios.post("http://localhost:4000/api/notifications/payment-reminder`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+
         alert(response.data.msg);
     } catch (err) {
-        const errorMessage = err.response?.data?.msg || "No se pudo enviar el/los mensaje(s).";
-        alert('Error: ' + errorMessage);
+        alert("Error al enviar el recordatorio.");
+        console.error("Error sending reminder:", err);
     }
   };
 
-  const handleSendAll = async () => {
-    if (studentsWithDebt.length === 0) {
-        return alert("No hay estudiantes con pagos pendientes.");
-    }
-    if (!window.confirm(`Se enviará un recordatorio a ${studentsWithDebt.length} encargado(s). ¿Continuar?`)) return;
-
-    setIsSendingAll(true);
-    await handleSendReminders({ studentCUIs: studentsWithDebt.map(s => s.cui_estudiante) });
-    setIsSendingAll(false);
-  };
-
-  const handleSendCustom = async (message) => {
-    if (!editingStudent) return;
-    await handleSendReminders({ studentCUIs: [editingStudent.cui_estudiante], customMessage: message });
-  };
+  const filteredStudents = useMemo(() => 
+    students.filter(s => 
+      s.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      s.cui_estudiante.toString().includes(searchTerm)
+    ), 
+    [students, searchTerm]
+  );
   
-  if (loading) return <div className="sp-page">Cargando alumnos...</div>;
-  if (error) return <div className="sp-page" style={{color: 'red'}}>{error}</div>;
+  if (loading) return <div className="sp-page">Cargando...</div>;
+  if (error) return <div className="sp-page"><div className="sp-error">{error}</div></div>;
 
   return (
     <div className="sp-page">
+      {editingStudent && (
+          <MessageEditorModal 
+              student={editingStudent} 
+              onClose={() => setEditingStudent(null)} 
+              onSend={sendReminder}
+          />
+      )}
       <div className="sp-container">
-        {editingStudent && <MessageEditorModal student={editingStudent} onClose={() => setEditingStudent(null)} onSend={handleSendCustom} />}
-        
         <header className="sp-header">
-          <h1>Panel de Pagos</h1>
-          <p>Gestión de solvencia de estudiantes</p>
+          <h1>Panel de Pagos y Solvencia</h1>
+          <p>Estado financiero de los estudiantes para el mes en curso.</p>
         </header>
-        
-        <button onClick={() => navigate(backPath)} className="sp-btn-volver">
-          ⬅ Volver al Panel
-        </button>
 
-        {isSecretary && (
-            <div className="sp-bulk-actions">
-                <button className="sp-btn sp-btnPrimary" onClick={handleSendAll} disabled={isSendingAll || studentsWithDebt.length === 0}>
-                    {isSendingAll ? 'Enviando...' : `📱 Notificar a ${studentsWithDebt.length} Pendientes`}
-                </button>
-            </div>
-        )}
-      
-        <section className="sp-stats">
-          <h2 className="sp-statsTitle">Resumen de Pagos</h2>
-          <div className="sp-statsGrid">
-            <article className="sp-stat sp-borde-azul">
-              <div className="sp-statNumber">{totals.total}</div>
-              <div className="sp-statLabel">Total de Estudiantes</div>
-            </article>
-            <article className="sp-stat sp-borde-rojo">
-              <div className="sp-statNumber">{totals.pendientes}</div>
-              <div className="sp-statLabel">Pagos Pendientes</div>
-            </article>
-            <article className="sp-stat sp-borde-verde">
-              <div className="sp-statNumber">{totals.alDia}</div>
-              <div className="sp-statLabel">Al Día</div>
-            </article>
-          </div>
-        </section>
+        <nav className="sp-navbar">
+          <button className="sp-btn sp-btn--secondary" onClick={() => navigate(backPath)}>
+            ⬅ Volver al Panel
+          </button>
+          <input 
+            type="text"
+            className="sp-search"
+            placeholder="Buscar por nombre o CUI..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </nav>
 
-        <section className="sp-controls">
-          <div className="sp-controlsHeader">
-              <h2 className="sp-sectionTitle">Control de Estudiantes</h2>
-              <div className="sp-filters">
-                  <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-                      <option value="Todos los grados">Todos los grados</option>
-                      {grados.map(g => <option key={g.id_grado} value={g.nombre_grado}>{g.nombre_grado}</option>)}
-                  </select>
-                  <input 
-                      type="search" 
-                      placeholder="Buscar por nombre..." 
-                      value={query} 
-                      onChange={(e) => setQuery(e.target.value)} 
-                  />
-              </div>
-          </div>
-          
+        <section className="sp-main-content">
           <div className="sp-grid">
-            {filtered.map((s) => (
+            {filteredStudents.map(s => (
               <article key={s.cui_estudiante} className="sp-card">
                 <div className="sp-cardTop">
                   <div className="sp-cardInfo">

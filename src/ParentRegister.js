@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom'; // Para redirigir
-import axios from 'axios'; // Para llamar a la API
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import "./css/ParentRegister.css";
 
 export default function ParentRegister() {
@@ -12,68 +12,68 @@ export default function ParentRegister() {
   });
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
   const navigate = useNavigate(); 
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    
-    // 1. Obtener el token que guardaste en el login
     const token = localStorage.getItem('accessToken');
-
-    // Verificación por si no hay token
     if (!token) {
       alert("Sesión no válida. Por favor, inicie sesión de nuevo.");
-      navigate('/alumnos'); // Redirige al login
+      navigate('/login');
       return;
     }
 
-    // 2. Preparar los datos con los nombres que espera tu API
     const parentData = {
       cui_padre: form.parentCui,
       nombre_completo: form.parentName,
       direccion: form.address,
       telefono: form.phone,
-      usuario_agrego: "secretaria" // Puedes cambiar esto si lo obtienes del usuario logueado
+      usuario_agrego: "secretaria"
     };
 
-    // 3. Configurar los headers para enviar el token
     const config = {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     };
 
-    // 4. Enviar la petición al backend
     try {
-      await axios.post('http://localhost:4000/api/parents', parentData, config);
-      alert('¡Padre/Encargado guardado con éxito!');
+      // --- MODIFICACIÓN ---
+      // para usar en la nube (Render)
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/parents`, parentData, config);
       
-      // Regresa al formulario de estudiante para continuar el flujo
-      navigate('/alumnos'); 
+      // para usar localmente
+      /*
+      await axios.post('http://localhost:4000/api/parents', parentData, config);
+      */
+      // --- FIN DE MODIFICACIÓN ---
 
+      alert('¡Padre/Encargado registrado con éxito!');
+      navigate('/alumnos/registro');
     } catch (error) {
-      const errorMessage = error.response?.data?.msg || error.message;
-      console.error('Error al guardar el padre:', errorMessage);
-      alert('Error al guardar: ' + errorMessage);
+      const errorMsg = error.response?.data?.msg || 'Error al registrar al encargado.';
+      alert(errorMsg);
+      console.error("Error submitting parent:", error.response);
     }
   };
 
-  const goBack = () => window.history.back();
+  const goBack = () => navigate(-1);
 
   return (
-    <div className="prg-page">
+    <div className="prg-page-bg">
       <div className="prg-card">
-        <h1 className="prg-title">REGISTRO DE PADRES</h1>
+        <header className="prg-header">
+          <h1>Registro de Encargado</h1>
+          <p>Añada los datos del padre o encargado principal.</p>
+        </header>
 
-        <form onSubmit={onSubmit} className="prg-form">
-          <label className="prg-label">CUI de Padre/Encargado
+        <form className="prg-form" onSubmit={onSubmit}>
+          <label className="prg-label">CUI del Padre/Encargado
             <input
               className="prg-input"
               name="parentCui"
               value={form.parentCui}
               onChange={onChange}
               placeholder="0000 00000 0000"
+              required
             />
           </label>
 
@@ -84,6 +84,7 @@ export default function ParentRegister() {
               value={form.parentName}
               onChange={onChange}
               placeholder="Nombre completo"
+              required
             />
           </label>
 
@@ -94,6 +95,7 @@ export default function ParentRegister() {
               value={form.phone}
               onChange={onChange}
               placeholder="(502) 0000-0000"
+              required
             />
           </label>
 

@@ -21,9 +21,21 @@ export default function RegistroDocente() {
     const fetchGrades = async () => {
       try {
         const token = localStorage.getItem('accessToken');
+        
+        // --- MODIFICACIÓN ---
+        // para usar en la nube (Render)
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // para usar localmente
+        /*
         const res = await axios.get('http://localhost:4000/api/grades', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+        
         setGrados(res.data);
       } catch (error) {
         console.error("Error al cargar los grados", error);
@@ -46,37 +58,49 @@ export default function RegistroDocente() {
     }
 
     try {
-      await axios.post('http://localhost:4000/api/teachers/register', form, {
+      // --- MODIFICACIÓN ---
+      // para usar en la nube (Render)
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers`, form, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      alert('¡Docente y su cuenta de usuario guardados con éxito!');
-      navigate('/panel');
+      
+      // para usar localmente
+      /*
+      await axios.post('http://localhost:4000/api/teachers', form, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      */
+      // --- FIN DE MODIFICACIÓN ---
+
+      alert('¡Docente registrado con éxito!');
+      navigate('/docentes');
     } catch (error) {
-      const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
-      console.error('Error al guardar el docente:', errorMessage);
-      alert('Error al guardar: ' + errorMessage);
+      const errorMsg = error.response?.data?.msg || "Hubo un error al registrar al docente.";
+      alert(errorMsg);
+      console.error("Error al registrar docente:", error);
     }
   };
 
   return (
-    <div className="treg-container">
+    <div className="treg-page-bg">
       <div className="treg-card">
         <header className="treg-header">
-          <h1>Registro de Docentes</h1>
+          <h1>Registro de Nuevo Docente</h1>
+          <p>Complete los datos para añadir un nuevo miembro al personal.</p>
         </header>
         <form className="treg-form" onSubmit={onSubmit}>
-          <label className="treg-label" htmlFor="cui_docente">CUI del Docente (13 dígitos)</label>
-          <input id="cui_docente" name="cui_docente" className="treg-input" value={form.cui_docente} onChange={onChange} placeholder="2546789101234" required maxLength="13" />
-          <label className="treg-label" htmlFor="nombre_completo">Nombre Completo</label>
-          <input id="nombre_completo" name="nombre_completo" className="treg-input" value={form.nombre_completo} onChange={onChange} maxLength={100} required />
-          <label className="treg-label" htmlFor="username">Nombre de Usuario para Iniciar Sesión</label>
-          <input id="username" name="username" className="treg-input" value={form.username} onChange={onChange} placeholder="ej. csolis" required />
+          <label className="treg-label" htmlFor="cui_docente">CUI del Docente</label>
+          <input id="cui_docente" name="cui_docente" className="treg-input" value={form.cui_docente} onChange={onChange} placeholder="0000 00000 0000" required maxLength={13} />
+          <label className="treg-label" htmlFor="nombre_completo">Nombres y Apellidos</label>
+          <input id="nombre_completo" name="nombre_completo" className="treg-input" value={form.nombre_completo} onChange={onChange} placeholder="Nombre completo" required maxLength={100} />
+          <label className="treg-label" htmlFor="username">Nombre de Usuario (para iniciar sesión)</label>
+          <input id="username" name="username" className="treg-input" value={form.username} onChange={onChange} placeholder="Ej: juan.perez" required maxLength={50} />
           <label className="treg-label" htmlFor="password">Contraseña</label>
-          <input id="password" name="password" type="password" className="treg-input" value={form.password} onChange={onChange} placeholder="Mínimo 8 caracteres" required minLength="8" />
+          <input id="password" name="password" type="password" className="treg-input" value={form.password} onChange={onChange} placeholder="Mínimo 6 caracteres" required />
           <label className="treg-label" htmlFor="grado_guia">Grado Guía (opcional)</label>
           <select id="grado_guia" name="grado_guia" className="treg-input" value={form.grado_guia} onChange={onChange}>
-            <option value="">-- No Asignado --</option>
-            {grados.map((grado) => (<option key={grado.id_grado} value={grado.id_grado}>{grado.nombre_grado}</option>))}
+            <option value="">-- Ninguno --</option>
+            {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
           </select>
           <label className="treg-label" htmlFor="email">Correo (opcional)</label>
           <input id="email" name="email" type="email" className="treg-input" value={form.email} onChange={onChange} placeholder="docente@escuela.edu.gt" maxLength={50} />
@@ -106,4 +130,3 @@ export default function RegistroDocente() {
     </div>
   );
 }
-

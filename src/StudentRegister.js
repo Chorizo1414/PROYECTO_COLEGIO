@@ -1,4 +1,3 @@
-// src/StudentRegister.js
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from 'axios';
@@ -16,113 +15,111 @@ export default function StudentRegister() {
     id_grado: "",
   });
   const [grados, setGrados] = useState([]);
-  const [loading, setLoading] = useState(true); // 1. Nuevo estado de carga
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const fetchGrades = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:4000/api/grades', {
-        // si la ruta queda pública, puedes borrar headers
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      setGrados(res.data);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        alert('Tu sesión expiró. Iniciá sesión de nuevo.');
-        navigate('/login');
-      } else {
+    const fetchGrades = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        
+        // --- MODIFICACIÓN ---
+        // para usar en la nube (Render)
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        // para usar localmente
+        /*
+        const res = await axios.get('http://localhost:4000/api/grades', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        */
+        // --- FIN DE MODIFICACIÓN ---
+
+        setGrados(res.data);
+      } catch (error) {
         alert('No pude cargar los grados. Revisa la consola.');
+        console.error('Error al cargar los grados', error);
+      } finally {
+        setLoading(false);
       }
-      console.error('Error al cargar los grados', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchGrades();
-}, []);
+    };
+    fetchGrades();
+  }, []);
 
   const onChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      alert("Sesión no válida.");
-      return navigate('/login');
+      alert("Tu sesión ha expirado, por favor inicia sesión de nuevo.");
+      navigate('/login');
+      return;
     }
 
-    // Prepara todos los datos en un solo objeto
     const studentData = {
-      cui_estudiante: form.cuiEst,
       nombres: form.nombres,
       apellidos: form.apellidos,
       fecha_nacimiento: form.fechaNac,
-      genero_id: form.genero === 'F' ? 1 : 2,
+      genero: form.genero,
+      cui_estudiante: form.cuiEst,
+      cui_padre: form.cuiPadre,
       id_grado: form.id_grado,
-      id_seccion: form.id_seccion, // Asegúrate de que este campo esté en tu estado 'form'
-      cui_padre: form.cuiPadre, // El CUI del padre va en el mismo objeto
-      usuario_agrego: "secretaria" // O puedes obtenerlo del token
     };
-
+    
     try {
-      // UNA SOLA LLAMADA A LA API
+      // --- MODIFICACIÓN ---
+      // para usar en la nube (Render)
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/students`, studentData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // para usar localmente
+      /*
       await axios.post('http://localhost:4000/api/students', studentData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      */
+      // --- FIN DE MODIFICACIÓN ---
 
-      alert('¡Estudiante guardado con éxito!');
-      navigate('/alumnos'); // Redirige al nuevo dashboard de alumnos
-
+      alert("¡Estudiante registrado con éxito!");
+      navigate('/alumnos');
     } catch (error) {
-      const errorMessage = error.response?.data?.msg || "Ocurrió un error inesperado.";
-      console.error('Error al guardar:', errorMessage);
-      alert('Error al guardar: ' + errorMessage);
+      const errorMsg = error.response?.data?.msg || 'Ocurrió un error al registrar al estudiante.';
+      alert(errorMsg);
+      console.error('Error al registrar estudiante:', error.response);
     }
   };
 
-  if (loading) {
-    return <div className="reg-container"><div>Cargando información...</div></div>;
-  }
-  
+  if (loading) return <div className="reg-page-bg"><div>Cargando...</div></div>;
+
   return (
-    <div className="reg-container">
+    <div className="reg-page-bg">
       <div className="reg-card">
         <header className="reg-header">
-          <h1>Registro de Alumnos</h1>
+          <h1>Inscripción de Alumno</h1>
+          <p>Complete el formulario para un nuevo ingreso.</p>
         </header>
 
         <form className="reg-form" onSubmit={onSubmit}>
-          <label className="reg-label" htmlFor="nombres">Nombres del Estudiante</label>
+          <label className="reg-label" htmlFor="nombres">Nombres</label>
           <input id="nombres" name="nombres" className="reg-input" value={form.nombres} onChange={onChange} required />
 
-          <label className="reg-label" htmlFor="apellidos">Apellidos del Estudiante</label>
+          <label className="reg-label" htmlFor="apellidos">Apellidos</label>
           <input id="apellidos" name="apellidos" className="reg-input" value={form.apellidos} onChange={onChange} required />
-
+          
+          <label className="reg-label" htmlFor="id_grado">Grado a Inscribir</label>
+          <select id="id_grado" name="id_grado" className="reg-input" value={form.id_grado} onChange={onChange} required>
+            <option value="">-- Seleccione un Grado --</option>
+            {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
+          </select>
+          
           <label className="reg-label" htmlFor="fechaNac">Fecha de Nacimiento</label>
           <input id="fechaNac" name="fechaNac" type="date" className="reg-input" value={form.fechaNac} onChange={onChange} required />
-
-          {/* CAMPO DE GRADO EN EL ORDEN CORRECTO */}
-          <label className="reg-label" htmlFor="id_grado">Grado a Cursar</label>
-          <select
-            id="id_grado"
-            name="id_grado"
-            className="reg-input"
-            value={form.id_grado}
-            onChange={onChange}
-            required
-          >
-            <option value="">-- Seleccione un Grado --</option>
-            {grados.map((grado) => (
-              <option key={grado.id_grado} value={grado.id_grado}>
-                {grado.nombre_grado}
-              </option>
-            ))}
-          </select>
-
+          
           <fieldset className="reg-fieldset">
             <legend className="reg-legend">Género</legend>
             <div className="reg-radio-row">
