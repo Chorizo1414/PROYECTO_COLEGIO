@@ -92,7 +92,7 @@
 }
 .tdb-label { font-weight: 600; font-size: 14px; color: var(--texto-principal); }
 .tdb-select, .tdb-input {
-  width: 100%;
+  width: 96%;
   padding: 10px;
   border: 1px solid var(--gris-borde);
   border-radius: 8px;
@@ -248,4 +248,30 @@
 .tdb-btn-icon:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.tdb-task-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tdb-task-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0; /* Ocultos por defecto */
+  transition: opacity 0.2s ease;
+}
+
+.tdb-task-header:hover .tdb-task-actions {
+  opacity: 1; /* Se muestran al pasar el mouse sobre el encabezado de la tarea */
+}
+
+.tdb-task-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 14px;
 }

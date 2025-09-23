@@ -11,7 +11,9 @@ const {
     getTeacherByCui,
     updateTeacher,
     deactivateTeacher,
-    getAssignedTeachers
+    getAssignedTeachers,
+    updateTask,
+    deleteTask
 } = require('../controllers/teacherController');
 
 // --- Rutas específicas primero ---
@@ -27,5 +29,8 @@ router.get('/', authMiddleware, getAllTeachers);
 router.put('/deactivate/:cui', authMiddleware, deactivateTeacher);
 router.get('/:cui', authMiddleware, getTeacherByCui);
 router.put('/:cui', authMiddleware, updateTeacher);
+
+router.put('/tasks/:taskId', authMiddleware, updateTask);
+router.delete('/tasks/:taskId', authMiddleware, deleteTask);
 
 module.exports = router;

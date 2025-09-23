@@ -343,6 +343,42 @@ const getAssignedTeachers = async (req, res) => {
   }
 };
 
+// --- NUEVA FUNCIÓN: ACTUALIZAR UNA TAREA ---
+const updateTask = async (req, res) => {
+    const { taskId } = req.params;
+    const { titulo, fecha_entrega, id_curso } = req.body;
+    try {
+        const query = `
+            UPDATE tareas 
+            SET titulo = $1, fecha_entrega = $2, id_curso = $3 
+            WHERE id_tarea = $4 
+            RETURNING *`;
+        const result = await pool.query(query, [titulo, fecha_entrega, id_curso, taskId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ msg: 'Tarea no encontrada.' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error al actualizar la tarea:", err.message);
+        res.status(500).send("Error en el servidor");
+    }
+};
+
+// --- NUEVA FUNCIÓN: ELIMINAR UNA TAREA ---
+const deleteTask = async (req, res) => {
+    const { taskId } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM tareas WHERE id_tarea = $1', [taskId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ msg: 'Tarea no encontrada.' });
+        }
+        res.json({ msg: 'Tarea eliminada con éxito.' });
+    } catch (err) {
+        console.error("Error al eliminar la tarea:", err.message);
+        res.status(500).send("Error en el servidor");
+    }
+};
+
 module.exports = {
   registerTeacherAndUser,
   getTeacherAssignments,
@@ -353,6 +389,8 @@ module.exports = {
   getTeacherByCui, 
   updateTeacher,
   deactivateTeacher,
-  getAssignedTeachers
+  getAssignedTeachers,
+  updateTask, 
+  deleteTask 
 };
 
