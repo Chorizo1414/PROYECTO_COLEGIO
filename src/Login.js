@@ -18,10 +18,17 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:4000/api/auth/login", {
+      // para usar en la nube
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+      username,
+      password,
+      });
+      
+      // para usar localmente
+      /* const response = await axios.post("http://localhost:4000/api/auth/login", {
         username,
         password,
-      });
+      });*/
 
       const { accessToken, user } = response.data;
       auth.login(accessToken, user); // Guardar token y datos del usuario
