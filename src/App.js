@@ -1,22 +1,23 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-// Importa todos tus componentes
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login";
-import PanelRoles from "./PanelRoles";
 import ProtectedRoute from "./ProtectedRoute";
-import CoordinatorDashboard from "./CoordinatorDashboard";
-import SecretaryDashboard from "./SecretaryDashboard";
+import PanelRoles from './PanelRoles';
+import AlumnosDashboard from './AlumnosDashboard';
+import StudentRegister from './StudentRegister';
+import ParentRegister from './ParentRegister';
+import EditarAlumno from './EditarAlumno';
+import DocentesDashboard from './DocentesDashboard';
+import RegistroDocente from './RegistroDocente';
+import EditarDocente from './EditarDocente';
+import SecretaryPayments from './SecretaryPayments';
 import TeacherDashboard from "./TeacherDashboard";
-import Alumnos from "./Alumnos";
-import Docentes from "./Docentes";
-import Cursos from "./Cursos";
-import AsignarCursos from "./AsignarCursos";
-import ParentRegister from "./ParentRegister";
-import SecretaryPayments from "./SecretaryPayments";
-import SeleccionarDocente from "./SeleccionarDocente";
 import ParentDashboard from './ParentDashboard';
-import './css/App.css';
+import CoordinatorDashboard from './CoordinatorDashboard';
+import SecretaryDashboard from './SecretaryDashboard';
+import AsignarCursos from './AsignarCursos';
+import SeleccionarDocente from './SeleccionarDocente';
+import GestionCursos from './GestionCursos';
 
 export default function App() {
   return (
