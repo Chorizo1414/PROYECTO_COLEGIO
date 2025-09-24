@@ -40,8 +40,8 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             } else {
-                await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}/tasks`, 
-                    form, 
+                await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/tasks`,
+                    { ...form, id_asignacion: assignmentId },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             }
@@ -94,7 +94,7 @@ export default function TeacherDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}`, {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/assignment-data/${assignmentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -109,28 +109,54 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     const loadInitialData = async () => {
+      try {
         const token = localStorage.getItem('accessToken');
         const user = auth.getUser();
         let assignments = [];
+
         if (isCoordinatorView && paramId) {
-          assignments.push({ id_asignacion: paramId, description: 'Vista Coordinador' });
-        } else if(user?.cui_docente) {
-          const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${user.cui_docente}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
-          assignments = res.data;
+          assignments = [{ id_asignacion: paramId, description: 'Vista Coordinador' }];
+        } else if (user?.cui_docente) {
+          const res = await axios.get(
+            `${process.env.REACT_APP_API_URL}/api/teachers/${user.cui_docente}/assignments`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          assignments = res.data || [];
         }
+
         setUserAssignments(assignments);
+
         if (paramId) {
-            setSelectedAssignmentId(paramId);
-            fetchData(paramId);
-        } else if(assignments.length > 0) {
-            setSelectedAssignmentId(assignments[0].id_asignacion);
-            fetchData(assignments[0].id_asignacion);
+          setSelectedAssignmentId(paramId);
+          await fetchData(paramId);
+        } else if (assignments.length > 0) {
+          const firstId = String(assignments[0].id_asignacion);
+          setSelectedAssignmentId(firstId);
+          await fetchData(firstId);
         } else {
-            setLoading(false);
+          // sin asignaciones: no dispares más llamadas ni muestres errores
+          setSelectedAssignmentId('');
+          setData({ grado: '', seccion: '', anio: '', cursos: [], students: [], tasks: [], deliveries: {} });
+          setLoading(false);
         }
+      } catch (err) {
+        // Si el backend responde 404, lo tratamos como "sin asignaciones"
+        if (err?.response?.status === 404) {
+          setUserAssignments([]);
+          setSelectedAssignmentId('');
+          setData({ grado: '', seccion: '', anio: '', cursos: [], students: [], tasks: [], deliveries: {} });
+          setLoading(false);
+        } else {
+          console.error(err);
+          alert('No fue posible cargar tus asignaciones.');
+          setLoading(false);
+        }
+      }
     };
+
     loadInitialData();
   }, [paramId, isCoordinatorView, fetchData]);
+
 
   const handleAssignmentChange = (e) => {
     const newId = e.target.value;
@@ -152,9 +178,10 @@ export default function TeacherDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       const payload = { cui_estudiante, id_tarea, entregado };
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${selectedAssignmentId}/deliveries`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/deliveries`, 
+        { deliveries: [payload] }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
     } catch (error) {
       alert('Error al guardar, por favor intente de nuevo.');
       fetchData(selectedAssignmentId);

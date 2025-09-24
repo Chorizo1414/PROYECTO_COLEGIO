@@ -275,3 +275,13 @@
   padding: 2px;
   font-size: 14px;
 }
+
+/* Tabla usada por TeacherDashboard.js */
+.tdb-table-container { overflow-x:auto; border:1px solid #e2e8f0; border-radius:12px; }
+.tdb-table { width:100%; border-collapse:collapse; }
+.tdb-table th, .tdb-table td { padding:12px 16px; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+.tdb-table thead th { background:#f8fafc; font-weight:600; color:#64748b; position:sticky; top:0; z-index:2; }
+.student-name { font-weight:600; color:#1e293b; position:sticky; left:0; background:#fff; }
+.task-header, .task-check, .tdb-action-header, .tdb-action-cell { text-align:center; }
+.task-title { display:flex; align-items:center; justify-content:center; gap:8px; }
+.task-date { font-size:12px; color:#64748b; }
