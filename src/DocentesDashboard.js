@@ -13,19 +13,9 @@ export default function DocentesDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      // para usar localmente
-      /*
-      const res = await axios.get('http://localhost:4000/api/teachers', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
       
       setDocentes(res.data);
     } catch (err) {
@@ -45,19 +35,9 @@ export default function DocentesDashboard() {
       try {
         const token = localStorage.getItem('accessToken');
         
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/deactivate/${cui}`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        // para usar localmente
-        /*
-        await axios.put(`http://localhost:4000/api/teachers/deactivate/${cui}`, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
 
         fetchDocentes(); // Recargar la lista
         alert('Docente dado de baja con éxito.');

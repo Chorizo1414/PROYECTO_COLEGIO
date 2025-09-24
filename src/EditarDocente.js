@@ -19,19 +19,9 @@ export default function EditarDocente() {
         const fetchDocente = async () => {
             const token = localStorage.getItem('accessToken');
             try {
-                // --- MODIFICACIÓN ---
-                // para usar en la nube (Render)
                 const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${cui}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                // para usar localmente
-                /*
-                const res = await axios.get(`http://localhost:4000/api/teachers/${cui}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                */
-                // --- FIN DE MODIFICACIÓN ---
                 
                 setForm(res.data);
             } catch (error) {
@@ -50,19 +40,9 @@ export default function EditarDocente() {
         e.preventDefault();
         const token = localStorage.getItem('accessToken');
         try {
-            // --- MODIFICACIÓN ---
-            // para usar en la nube (Render)
             await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/${cui}`, form, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            // para usar localmente
-            /*
-            await axios.put(`http://localhost:4000/api/teachers/${cui}`, form, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            */
-            // --- FIN DE MODIFICACIÓN ---
 
             alert('¡Docente actualizado con éxito!');
             navigate('/docentes');

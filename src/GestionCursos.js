@@ -13,21 +13,10 @@ export default function GestionCursos() {
     const fetchData = async () => {
         const token = localStorage.getItem('accessToken');
         try {
-            // --- MODIFICACIÓN ---
-            // para usar en la nube (Render)
             const [cursosRes, gradosRes] = await Promise.all([
                 axios.get(`${process.env.REACT_APP_API_URL}/api/cursos`, { headers: { Authorization: `Bearer ${token}` } }),
                 axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
-            
-            // para usar localmente
-            /*
-            const [cursosRes, gradosRes] = await Promise.all([
-                axios.get('http://localhost:4000/api/cursos', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://localhost:4000/api/grades', { headers: { Authorization: `Bearer ${token}` } })
-            ]);
-            */
-            // --- FIN DE MODIFICACIÓN ---
             
             setCursos(cursosRes.data);
             setGrados(gradosRes.data);
@@ -56,36 +45,14 @@ export default function GestionCursos() {
 
         try {
             if (editingCurso) {
-                // --- MODIFICACIÓN ---
-                // para usar en la nube (Render)
                 await axios.put(`${process.env.REACT_APP_API_URL}/api/cursos/${editingCurso.id_curso}`, data, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-
-                // para usar localmente
-                /*
-                await axios.put(`http://localhost:4000/api/cursos/${editingCurso.id_curso}`, data, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                */
-                // --- FIN DE MODIFICACIÓN ---
-                
                 alert('Curso actualizado.');
             } else {
-                // --- MODIFICACIÓN ---
-                // para usar en la nube (Render)
                 await axios.post(`${process.env.REACT_APP_API_URL}/api/cursos`, data, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                
-                // para usar localmente
-                /*
-                await axios.post('http://localhost:4000/api/cursos', data, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                */
-                // --- FIN DE MODIFICACIÓN ---
-
                 alert('Curso creado.');
             }
             fetchData();

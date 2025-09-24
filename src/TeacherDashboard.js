@@ -35,31 +35,15 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
         const token = localStorage.getItem('accessToken');
         try {
             if (taskToEdit) {
-                // --- MODIFICACIÓN ---
                 await axios.put(`${process.env.REACT_APP_API_URL}/api/teachers/tasks/${taskToEdit.id_tarea}`, 
                     { ...form, id_asignacion: assignmentId }, 
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                /*
-                await axios.put(`http://localhost:4000/api/teachers/tasks/${taskToEdit.id_tarea}`, 
-                    { ...form, id_asignacion: assignmentId }, 
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                */
-                // --- FIN DE MODIFICACIÓN ---
             } else {
-                // --- MODIFICACIÓN ---
                 await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}/tasks`, 
                     form, 
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                /*
-                await axios.post(`http://localhost:4000/api/teachers/assignments/${assignmentId}/tasks`, 
-                    form, 
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                */
-                // --- FIN DE MODIFICACIÓN ---
             }
             onSave();
         } catch (error) {
@@ -110,16 +94,9 @@ export default function TeacherDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       
-      // --- MODIFICACIÓN ---
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${assignmentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      /*
-      const res = await axios.get(`http://localhost:4000/api/teachers/assignments/${assignmentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
       
       setData(res.data);
     } catch (error) {
@@ -138,12 +115,7 @@ export default function TeacherDashboard() {
         if (isCoordinatorView && paramId) {
           assignments.push({ id_asignacion: paramId, description: 'Vista Coordinador' });
         } else if(user?.cui_docente) {
-          // --- MODIFICACIÓN ---
           const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${user.cui_docente}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
-          /*
-          const res = await axios.get(`http://localhost:4000/api/teachers/${user.cui_docente}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
-          */
-          // --- FIN DE MODIFICACIÓN ---
           assignments = res.data;
         }
         setUserAssignments(assignments);
@@ -180,16 +152,9 @@ export default function TeacherDashboard() {
     try {
       const token = localStorage.getItem('accessToken');
       const payload = { cui_estudiante, id_tarea, entregado };
-      // --- MODIFICACIÓN ---
       await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers/assignments/${selectedAssignmentId}/deliveries`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      /*
-      await axios.post(`http://localhost:4000/api/teachers/assignments/${selectedAssignmentId}/deliveries`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
     } catch (error) {
       alert('Error al guardar, por favor intente de nuevo.');
       fetchData(selectedAssignmentId);
@@ -206,16 +171,9 @@ export default function TeacherDashboard() {
             studentCUIs: studentCUIs,
             assignmentId: selectedAssignmentId
         };
-        // --- MODIFICACIÓN ---
         const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/notifications/homework-reminder`, payload, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        /*
-        const res = await axios.post(`http://localhost:4000/api/notifications/homework-reminder`, payload, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
         alert(res.data.msg);
     } catch (error) {
         alert("Error al enviar recordatorios.");
@@ -228,12 +186,7 @@ export default function TeacherDashboard() {
     if (window.confirm("¿Seguro que quieres eliminar esta tarea? Se borrarán también las entregas asociadas.")) {
       try {
         const token = localStorage.getItem('accessToken');
-        // --- MODIFICACIÓN ---
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/teachers/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
-        /*
-        await axios.delete(`http://localhost:4000/api/teachers/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
-        */
-        // --- FIN DE MODIFICACIÓN ---
         fetchData(selectedAssignmentId);
       } catch (error) {
         alert('Error al eliminar la tarea.');

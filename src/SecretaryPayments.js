@@ -56,19 +56,9 @@ export default function SecretaryPayments() {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/students/details`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // para usar localmente
-      /*
-      const res = await axios.get("http://localhost:4000/api/students/details", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
       
       setStudents(res.data);
     } catch (err) {
@@ -88,21 +78,10 @@ export default function SecretaryPayments() {
       try {
         const token = localStorage.getItem('accessToken');
 
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         await axios.put(`${process.env.REACT_APP_API_URL}/api/students/financial-status/${cui_estudiante}`, 
           { estado: 'Solvente' }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        // para usar localmente
-        /*
-        await axios.put(`http://localhost:4000/api/students/financial-status/${cui_estudiante}`, 
-          { estado: 'Solvente' }, 
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        */
-        // --- FIN DE MODIFICACIÓN ---
         
         alert("Estado actualizado a solvente.");
         fetchData();
@@ -121,19 +100,9 @@ export default function SecretaryPayments() {
             customMessage: customMessage
         };
 
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/notifications/payment-reminder`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // para usar localmente
-        /*
-        const response = await axios.post("http://localhost:4000/api/notifications/payment-reminder`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
 
         alert(response.data.msg);
     } catch (err) {

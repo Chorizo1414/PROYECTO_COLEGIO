@@ -31,13 +31,11 @@ export default function EditarAlumno() {
     const token = localStorage.getItem('accessToken');
     const fetchData = async () => {
       try {
-        // --- MODIFICACIÓN ---
         const [gradosRes, padresRes, alumnoRes] = await Promise.all([
           axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, { headers: { 'Authorization': `Bearer ${token}` } }),
           axios.get(`${process.env.REACT_APP_API_URL}/api/parents`, { headers: { 'Authorization': `Bearer ${token}` } }),
           axios.get(`${process.env.REACT_APP_API_URL}/api/students/${cui}`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
-        // --- FIN DE MODIFICACIÓN ---
         
         setGrados(gradosRes.data);
         setPadres(padresRes.data);
@@ -47,11 +45,9 @@ export default function EditarAlumno() {
         setForm(alumnoData);
         
         if (alumnoData.id_grado) {
-          // --- MODIFICACIÓN ---
           const seccionesRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades/${alumnoData.id_grado}/sections`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          // --- FIN DE MODIFICACIÓN ---
           setSecciones(seccionesRes.data);
         }
 
@@ -70,11 +66,9 @@ export default function EditarAlumno() {
     setForm(f => ({ ...f, id_grado: gradoId, id_seccion: "" }));
     if (gradoId) {
       const token = localStorage.getItem('accessToken');
-      // --- MODIFICACIÓN ---
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades/${gradoId}/sections`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      // --- FIN DE MODIFICACIÓN ---
       setSecciones(res.data);
     } else {
       setSecciones([]);
@@ -87,11 +81,9 @@ export default function EditarAlumno() {
     e.preventDefault();
     const token = localStorage.getItem('accessToken');
     try {
-      // --- MODIFICACIÓN ---
       await axios.put(`${process.env.REACT_APP_API_URL}/api/students/${cui}`, form, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      // --- FIN DE MODIFICACIÓN ---
       alert('¡Estudiante actualizado con éxito!');
       navigate('/alumnos');
     } catch (error) {

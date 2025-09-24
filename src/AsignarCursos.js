@@ -27,23 +27,11 @@ const AsignarCursos = () => {
     try {
       setLoading(true);
       
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       const [docentesRes, gradosRes, asignacionesRes] = await Promise.all([
         axios.get(`${process.env.REACT_APP_API_URL}/api/teachers`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${process.env.REACT_APP_API_URL}/api/asignaciones`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-
-      // para usar localmente
-      /*
-      const [docentesRes, gradosRes, asignacionesRes] = await Promise.all([
-        axios.get('http://localhost:4000/api/teachers', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('http://localhost:4000/api/grades', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('http://localhost:4000/api/asignaciones', { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      */
-      // --- FIN DE MODIFICACIÓN ---
       
       setDocentes(docentesRes.data);
       setGrados(gradosRes.data);
@@ -65,21 +53,10 @@ const AsignarCursos = () => {
     setForm({ ...form, id_grado: gradoId, id_seccion: '', cursos_ids: [] });
     if (gradoId) {
       try {
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         const [seccionesRes, cursosRes] = await Promise.all([
           axios.get(`${process.env.REACT_APP_API_URL}/api/grades/${gradoId}/sections`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${process.env.REACT_APP_API_URL}/api/cursos/grado/${gradoId}`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
-
-        // para usar localmente
-        /*
-        const [seccionesRes, cursosRes] = await Promise.all([
-          axios.get(`http://localhost:4000/api/grades/${gradoId}/sections`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`http://localhost:4000/api/cursos/grado/${gradoId}`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        */
-        // --- FIN DE MODIFICACIÓN ---
         
         setSecciones(seccionesRes.data);
         setCursos(cursosRes.data);
@@ -114,34 +91,14 @@ const AsignarCursos = () => {
     const token = localStorage.getItem('accessToken');
     try {
       if (editingId) {
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         await axios.put(`${process.env.REACT_APP_API_URL}/api/asignaciones/${editingId}`, form, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // para usar localmente
-        /*
-        await axios.put(`http://localhost:4000/api/asignaciones/${editingId}`, form, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
         alert('Asignación actualizada con éxito.');
       } else {
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         await axios.post(`${process.env.REACT_APP_API_URL}/api/asignaciones`, form, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // para usar localmente
-        /*
-        await axios.post('http://localhost:4000/api/asignaciones', form, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
         alert('Cursos asignados con éxito.');
       }
       setForm(initialFormState);
@@ -176,20 +133,9 @@ const AsignarCursos = () => {
     if(window.confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
       const token = localStorage.getItem('accessToken');
       try {
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/asignaciones/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // para usar localmente
-        /*
-        await axios.delete(`http://localhost:4000/api/asignaciones/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
-
         alert('Asignación eliminada.');
         fetchData();
       } catch (error) {

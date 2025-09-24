@@ -22,19 +22,9 @@ export default function RegistroDocente() {
       try {
         const token = localStorage.getItem('accessToken');
         
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        // para usar localmente
-        /*
-        const res = await axios.get('http://localhost:4000/api/grades', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
         
         setGrados(res.data);
       } catch (error) {
@@ -58,19 +48,9 @@ export default function RegistroDocente() {
     }
 
     try {
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers`, form, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      // para usar localmente
-      /*
-      await axios.post('http://localhost:4000/api/teachers', form, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
 
       alert('¡Docente registrado con éxito!');
       navigate('/docentes');

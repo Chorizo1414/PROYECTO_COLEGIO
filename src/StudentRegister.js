@@ -22,19 +22,9 @@ export default function StudentRegister() {
       try {
         const token = localStorage.getItem('accessToken');
         
-        // --- MODIFICACIÓN ---
-        // para usar en la nube (Render)
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-
-        // para usar localmente
-        /*
-        const res = await axios.get('http://localhost:4000/api/grades', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        */
-        // --- FIN DE MODIFICACIÓN ---
 
         setGrados(res.data);
       } catch (error) {
@@ -71,19 +61,9 @@ export default function StudentRegister() {
     };
     
     try {
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       await axios.post(`${process.env.REACT_APP_API_URL}/api/students`, studentData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      // para usar localmente
-      /*
-      await axios.post('http://localhost:4000/api/students', studentData, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      */
-      // --- FIN DE MODIFICACIÓN ---
 
       alert("¡Estudiante registrado con éxito!");
       navigate('/alumnos');

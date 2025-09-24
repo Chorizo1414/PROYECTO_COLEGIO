@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './css/SeleccionarDocente.css'; // Crearemos este CSS
+import './css/SeleccionarDocente.css';
 
 const SeleccionarDocente = () => {
   const [docentes, setDocentes] = useState([]);
@@ -12,7 +12,7 @@ const SeleccionarDocente = () => {
     const fetchAssignedTeachers = async () => {
       const token = localStorage.getItem('accessToken');
       try {
-        const res = await axios.get('http://localhost:4000/api/teachers/assigned', {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/assigned`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDocentes(res.data);

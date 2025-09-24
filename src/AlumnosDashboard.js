@@ -22,12 +22,10 @@ export default function AlumnosDashboard() {
       const token = localStorage.getItem('accessToken');
       const headers = { Authorization: `Bearer ${token}` };
       
-      // --- MODIFICACIÓN ---
       const [alumnosRes, seccionesRes] = await Promise.all([
         axios.get(`${process.env.REACT_APP_API_URL}/api/students`, { headers }),
         axios.get(`${process.env.REACT_APP_API_URL}/api/grades/sections/all`, { headers })
       ]);
-      // --- FIN DE MODIFICACIÓN ---
       
       setAlumnos(alumnosRes.data);
       setSecciones(seccionesRes.data);
@@ -50,11 +48,9 @@ export default function AlumnosDashboard() {
     setAlumnos(alumnos.map(a => a.cui_estudiante === cui_estudiante ? { ...a, id_seccion: new_id_seccion, nombre_seccion: secciones.find(s => s.id_seccion == new_id_seccion)?.nombre_seccion } : a));
     try {
       const token = localStorage.getItem('accessToken');
-      // --- MODIFICACIÓN ---
       await axios.put(`${process.env.REACT_APP_API_URL}/api/students/${cui_estudiante}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // --- FIN DE MODIFICACIÓN ---
     } catch (error) {
       alert('Error al guardar la sección.');
       fetchData();
@@ -65,9 +61,7 @@ export default function AlumnosDashboard() {
     if (window.confirm(`¿Estás seguro de que deseas dar de baja a ${nombre}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        // --- MODIFICACIÓN ---
         await axios.put(`${process.env.REACT_APP_API_URL}/api/students/deactivate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
-        // --- FIN DE MODIFICACIÓN ---
         fetchData();
         alert('Estudiante dado de baja con éxito.');
       } catch (error) {
@@ -80,9 +74,7 @@ export default function AlumnosDashboard() {
     if (window.confirm(`¿Estás seguro de que deseas reactivar a ${nombre}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        // --- MODIFICACIÓN ---
         await axios.put(`${process.env.REACT_APP_API_URL}/api/students/activate/${cui}`, {}, { headers: { Authorization: `Bearer ${token}` }});
-        // --- FIN DE MODIFICACIÓN ---
         fetchData();
         alert('Estudiante reactivado con éxito.');
       } catch (error) {

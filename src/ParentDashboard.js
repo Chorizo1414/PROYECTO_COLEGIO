@@ -1,4 +1,3 @@
-// En src/ParentDashboard.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +24,7 @@ const ParentDashboard = () => {
     const fetchData = async () => {
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await axios.get('http://localhost:4000/api/parents', {
+            const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/parents`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setParents(res.data);
@@ -46,7 +45,7 @@ const ParentDashboard = () => {
         e.preventDefault();
         const token = localStorage.getItem('accessToken');
         const method = editingCui ? 'put' : 'post';
-        const url = `http://localhost:4000/api/parents${editingCui ? `/${editingCui}` : ''}`;
+        const url = `${process.env.REACT_APP_API_URL}/api/parents${editingCui ? `/${editingCui}` : ''}`;
         
         try {
             await axios[method](url, form, { headers: { Authorization: `Bearer ${token}` } });
@@ -75,8 +74,7 @@ const ParentDashboard = () => {
         if (!window.confirm(`¿Estás seguro de que quieres ${isActivating ? 'reactivar' : 'desactivar'} a ${parent.nombre_completo}?`)) return;
         
         const token = localStorage.getItem('accessToken');
-        // --- LA CORRECCIÓN ESTÁ AQUÍ ---
-        const url = `http://localhost:4000/api/parents/${action}/${parent.cui_padre}`;
+        const url = `${process.env.REACT_APP_API_URL}/api/parents/${action}/${parent.cui_padre}`;
         
         try {
             await axios.put(url, {}, { headers: { Authorization: `Bearer ${token}` } });

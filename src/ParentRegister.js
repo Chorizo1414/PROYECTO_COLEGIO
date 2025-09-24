@@ -36,16 +36,8 @@ export default function ParentRegister() {
     };
 
     try {
-      // --- MODIFICACIÓN ---
-      // para usar en la nube (Render)
       await axios.post(`${process.env.REACT_APP_API_URL}/api/parents`, parentData, config);
       
-      // para usar localmente
-      /*
-      await axios.post('http://localhost:4000/api/parents', parentData, config);
-      */
-      // --- FIN DE MODIFICACIÓN ---
-
       alert('¡Padre/Encargado registrado con éxito!');
       navigate('/alumnos/registro');
     } catch (error) {
