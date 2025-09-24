@@ -1,3 +1,4 @@
+// backend/controllers/asignacionController.js
 const pool = require('../config/db');
 
 // OBTENER TODAS LAS ASIGNACIONES ACTUALES

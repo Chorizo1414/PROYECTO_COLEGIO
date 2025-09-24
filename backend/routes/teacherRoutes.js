@@ -19,7 +19,10 @@ const {
 // --- Rutas específicas primero ---
 router.post('/register', authMiddleware, registerTeacherAndUser);
 router.get('/assigned', authMiddleware, getAssignedTeachers);
-router.get('/assignments/:cui', authMiddleware, getTeacherAssignments);
+
+// ✅ RUTA CORREGIDA AQUÍ
+router.get('/:cui/assignments', authMiddleware, getTeacherAssignments); 
+
 router.get('/assignment-data/:assignmentId', authMiddleware, getAssignmentData);
 router.post('/tasks', authMiddleware, createTask);
 router.post('/deliveries', authMiddleware, saveDeliveries);

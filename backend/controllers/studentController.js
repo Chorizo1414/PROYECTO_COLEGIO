@@ -1,3 +1,4 @@
+// backend/controllers/studentController.js
 const pool = require('../config/db');
 
 // --- OBTENER TODOS LOS ESTUDIANTES (VISTA PARA COORDINADOR) ---

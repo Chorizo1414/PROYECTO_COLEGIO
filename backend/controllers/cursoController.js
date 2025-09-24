@@ -1,3 +1,4 @@
+// backend/controllers/cursoController.js
 const pool = require('../config/db');
 
 // OBTENER TODOS LOS CURSOS

@@ -1,4 +1,4 @@
-// en backend/controllers/notificationController.js
+// backend/controllers/notificationController.js
 const pool = require('../config/db');
 const { sendMessage } = require('../services/whatsappService');
 const { getStudentDebtStatus } = require('./studentController');

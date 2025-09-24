@@ -6,23 +6,12 @@ const getTeacherByCui = async (req, res) => {
   const { cui } = req.params;
   try {
     const query = `
-      SELECT
-        d.cui_docente,
-        d.nombre_completo,
-        d.grado_guia,
-        d.email,
-        d.telefono,
-        d.estado_id,
-        u.username
-      FROM docentes d
-      LEFT JOIN usuarios u ON d.cui_docente = u.cui_docente
+      SELECT d.cui_docente, d.nombre_completo, d.grado_guia, d.email, d.telefono, d.estado_id, u.username
+      FROM docentes d LEFT JOIN usuarios u ON d.cui_docente = u.cui_docente
       WHERE d.cui_docente = $1;
     `;
     const { rows } = await pool.query(query, [cui]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ msg: 'Docente no encontrado.' });
-    }
+    if (rows.length === 0) return res.status(404).json({ msg: 'Docente no encontrado.' });
     res.json(rows[0]);
   } catch (err) {
     console.error(`Error al obtener docente ${cui}:`, err.message);
@@ -33,36 +22,20 @@ const getTeacherByCui = async (req, res) => {
 // --- ACTUALIZAR UN DOCENTE ---
 const updateTeacher = async (req, res) => {
   const { cui } = req.params;
-  const {
-    nombre_completo,
-    grado_guia,
-    email,
-    telefono,
-    estado_id,
-    username,
-    password // Opcional: solo se actualiza si se envía
-  } = req.body;
+  const { nombre_completo, grado_guia, email, telefono, estado_id, username, password } = req.body;
   const usuario_modifico = req.user.username;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Actualizar la tabla de docentes
     const docenteQuery = `
-      UPDATE docentes SET
-        nombre_completo = $1,
-        grado_guia = $2,
-        email = $3,
-        telefono = $4,
-        estado_id = $5,
-        usuario_modifico = $6,
-        fecha_modifico = NOW()
+      UPDATE docentes SET nombre_completo = $1, grado_guia = $2, email = $3, telefono = $4,
+        estado_id = $5, usuario_modifico = $6, fecha_modifico = NOW()
       WHERE cui_docente = $7
     `;
     await client.query(docenteQuery, [nombre_completo, grado_guia || null, email || null, telefono || null, estado_id, usuario_modifico, cui]);
 
-    // 2. Actualizar la tabla de usuarios (con o sin contraseña)
     if (password && password.trim() !== '') {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
@@ -93,12 +66,7 @@ const updateTeacher = async (req, res) => {
 
 // --- REGISTRO COMPLETO DE DOCENTE Y USUARIO ---
 const registerTeacherAndUser = async (req, res) => {
-  const {
-    cui_docente, nombre_completo, grado_guia, email, telefono, estado_id,
-    username, password 
-  } = req.body;
-  
-  // CORRECCIÓN: Obtenemos el usuario que agrega desde el token decodificado
+  const { cui_docente, nombre_completo, grado_guia, email, telefono, estado_id, username, password } = req.body;
   const usuario_agrego = req.user.username;
 
   if (!cui_docente || !nombre_completo || !estado_id || !username || !password) {
@@ -112,10 +80,7 @@ const registerTeacherAndUser = async (req, res) => {
     const teacherQuery = `
       INSERT INTO docentes (cui_docente, nombre_completo, grado_guia, email, telefono, estado_id, usuario_agrego) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING cui_docente`;
-    
-    await client.query(teacherQuery, [
-      cui_docente, nombre_completo, grado_guia || null, email || null, telefono || null, estado_id, usuario_agrego
-    ]);
+    await client.query(teacherQuery, [cui_docente, nombre_completo, grado_guia || null, email || null, telefono || null, estado_id, usuario_agrego]);
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -123,19 +88,13 @@ const registerTeacherAndUser = async (req, res) => {
     const userQuery = `
       INSERT INTO usuarios (username, password, rol_id, cui_docente, estado_id, usuario_agrego) 
       VALUES ($1, $2, $3, $4, $5, $6)`;
-
-    await client.query(userQuery, [
-      username, hashedPassword, 3, cui_docente, estado_id, usuario_agrego
-    ]);
+    await client.query(userQuery, [username, hashedPassword, 3, cui_docente, estado_id, usuario_agrego]);
     
     await client.query('COMMIT');
-
     res.status(201).json({ msg: 'Docente y usuario creados con éxito.' });
-
   } catch (err) {
     await client.query('ROLLBACK');
     console.error("Error en el registro de docente:", err.message);
-    
     if (err.code === '23505') {
         return res.status(400).json({ msg: 'El CUI o el nombre de usuario ya existen.' });
     }
@@ -145,32 +104,23 @@ const registerTeacherAndUser = async (req, res) => {
   }
 };
 
-// --- OBTENER ASIGNACIONES (Función existente) ---
+// ✅ PRIMERA CORRECCIÓN: Se construye el campo 'description' para el menú desplegable.
 const getTeacherAssignments = async (req, res) => {
   try {
     const { cui } = req.params;
-
-    if (!cui) {
-      return res.status(400).json({ msg: "No se proporcionó el CUI del docente." });
-    }
-
-    // <-- CAMBIO: La consulta ahora usa las nuevas tablas y agrupa los cursos
+    if (!cui) return res.status(400).json({ msg: "No se proporcionó el CUI del docente." });
+    
     const query = `
       SELECT 
-        ad.id_asignacion,
-        g.nombre_grado,
-        s.nombre_seccion,
-        -- Usamos ARRAY_AGG para juntar todos los nombres de cursos en un solo campo
-        ARRAY_AGG(c.nombre_curso) as cursos
+        ad.id_asignacion, g.nombre_grado, s.nombre_seccion, ad.anio,
+        ARRAY_AGG(c.nombre_curso ORDER BY c.nombre_curso) as cursos
       FROM asignacion_docente ad
       JOIN grados g ON ad.id_grado = g.id_grado
       JOIN secciones s ON ad.id_seccion = s.id_seccion
-      -- Unimos con la tabla detalle para obtener los cursos
       LEFT JOIN asignacion_cursos_detalle acd ON ad.id_asignacion = acd.id_asignacion
       LEFT JOIN cursos c ON acd.id_curso = c.id_curso
       WHERE ad.cui_docente = $1
-      -- Agrupamos para que cada fila sea una asignación única con todos sus cursos
-      GROUP BY ad.id_asignacion, g.nombre_grado, s.nombre_seccion
+      GROUP BY ad.id_asignacion, g.nombre_grado, s.nombre_seccion, ad.anio
       ORDER BY g.nombre_grado, s.nombre_seccion;
     `;
     const { rows } = await pool.query(query, [cui]);
@@ -181,35 +131,35 @@ const getTeacherAssignments = async (req, res) => {
   }
 };
 
-// --- OBTENER DATOS DE LA ASIGNACIÓN (Función existente) ---
+// ✅ SEGUNDA CORRECCIÓN: Se añaden grado, sección y año a la respuesta.
 const getAssignmentData = async (req, res) => {
   const { assignmentId } = req.params;
   try {
-    const asignacionQuery = await pool.query("SELECT id_grado, id_seccion FROM asignacion_docente WHERE id_asignacion = $1", [assignmentId]);
+    const asignacionQuery = await pool.query(
+        `SELECT
+            ad.id_grado, ad.id_seccion, g.nombre_grado, s.nombre_seccion, ad.anio
+         FROM asignacion_docente ad
+         JOIN grados g ON ad.id_grado = g.id_grado
+         JOIN secciones s ON ad.id_seccion = s.id_seccion
+         WHERE ad.id_asignacion = $1`,
+        [assignmentId]
+    );
     if (asignacionQuery.rows.length === 0) return res.status(404).json({ msg: "Asignación no encontrada" });
 
-    const { id_grado, id_seccion } = asignacionQuery.rows[0];
+    const { id_grado, id_seccion, nombre_grado, nombre_seccion, anio } = asignacionQuery.rows[0];
 
-    // Consulta para obtener los cursos de esta asignación
     const cursosAsignadosQuery = await pool.query(
-      `SELECT c.id_curso, c.nombre_curso 
-       FROM cursos c
+      `SELECT c.id_curso, c.nombre_curso FROM cursos c
        JOIN asignacion_cursos_detalle acd ON c.id_curso = acd.id_curso
-       WHERE acd.id_asignacion = $1
-       ORDER BY c.nombre_curso`, [assignmentId]
+       WHERE acd.id_asignacion = $1 ORDER BY c.nombre_curso`, [assignmentId]
     );
 
-    // Las otras consultas no cambian
     const studentsQuery = await pool.query("SELECT cui_estudiante, nombres, apellidos FROM estudiantes WHERE id_grado = $1 AND id_seccion = $2 ORDER BY apellidos, nombres", [id_grado, id_seccion]);
     const tasksQuery = await pool.query(
-  `SELECT 
-     t.id_tarea, t.titulo, t.fecha_entrega, t.id_curso, c.nombre_curso 
-   FROM tareas t
-   JOIN cursos c ON t.id_curso = c.id_curso
-   WHERE t.id_asignacion = $1 
-   ORDER BY c.nombre_curso, t.fecha_entrega DESC`, 
-  [assignmentId]
-);
+      `SELECT t.id_tarea, t.titulo, t.fecha_entrega, t.id_curso, c.nombre_curso FROM tareas t
+       JOIN cursos c ON t.id_curso = c.id_curso
+       WHERE t.id_asignacion = $1 ORDER BY c.nombre_curso, t.fecha_entrega DESC`, [assignmentId]
+    );
     const deliveriesQuery = await pool.query(`SELECT e.cui_estudiante, e.id_tarea, e.entregado FROM entregas e JOIN tareas t ON e.id_tarea = t.id_tarea WHERE t.id_asignacion = $1`, [assignmentId]);
     
     const deliveriesMap = deliveriesQuery.rows.reduce((acc, delivery) => {
@@ -218,8 +168,10 @@ const getAssignmentData = async (req, res) => {
       return acc;
     }, {});
 
-    // Añadimos `courses` a la respuesta
     res.json({ 
+        grado: nombre_grado,
+        seccion: nombre_seccion,
+        anio: anio,
         courses: cursosAsignadosQuery.rows,
         students: studentsQuery.rows, 
         tasks: tasksQuery.rows, 

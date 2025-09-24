@@ -1,3 +1,4 @@
+// backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 module.exports = function authMiddleware(req, res, next) {
@@ -29,4 +30,3 @@ module.exports = function authMiddleware(req, res, next) {
     res.status(401).json({ msg: 'Token no es válido' });
   }
 };
-

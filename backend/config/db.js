@@ -1,3 +1,4 @@
+// backend/config/db.js
 // Cargar .env y Pool (como ya lo tenés)
 require('dotenv').config();
 const { Pool } = require('pg');
