@@ -1,10 +1,10 @@
-// src/TeacherDashboard.js
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { auth } from "./auth";
 import './css/TeacherDashboard.css';
 
+// --- Componente TaskModal (sin cambios, pero necesario) ---
 const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     const [form, setForm] = useState({ titulo: '', fecha_entrega: '', id_curso: '' });
 
@@ -43,7 +43,7 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
         }
     };
 
-     return (
+    return (
         <div className="tdb-modal">
             <div className="tdb-modalCard">
                 <div className="tdb-modalHeader">
@@ -80,6 +80,8 @@ const TaskModal = ({ assignmentId, courses, taskToEdit, onClose, onSave }) => {
     );
 };
 
+
+// --- Componente Principal ---
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const { cui } = useParams();
@@ -93,18 +95,52 @@ export default function TeacherDashboard() {
   const [error, setError] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [teacherInfo, setTeacherInfo] = useState(null);
-  
   const [currentCourses, setCurrentCourses] = useState([]);
+  const [editingTask, setEditingTask] = useState(null);
+
+  // ✅ CORRECCIÓN: Se restauran los estados para controlar el envío
   const [isSendingAll, setIsSendingAll] = useState(false);
   const [sendingCui, setSendingCui] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
 
   const loggedInUser = auth.getUser();
   const isCoordinatorView = !!cui;
   const targetCui = cui || loggedInUser?.cui_docente;
 
-  const handleSendReminders = async (studentCuis = []) => {
-    // ... (Esta lógica no cambia)
+  // ✅ CORRECCIÓN: Se restaura la lógica completa de la función
+  const handleSendReminders = async (studentCUIs = []) => {
+    // Si no se especifica a quién, se envía a todos los alumnos de la lista
+    const targetCUIs = studentCUIs.length > 0 ? studentCUIs : students.map(s => s.cui_estudiante);
+
+    if (targetCUIs.length === 0) {
+      return alert("No hay alumnos en la lista para notificar.");
+    }
+
+    // Actualizar estado para mostrar feedback visual (ej. "Enviando...")
+    if (targetCUIs.length > 1) {
+      setIsSendingAll(true);
+    } else {
+      setSendingCui(targetCUIs[0]);
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const payload = {
+        studentCUIs: targetCUIs,
+        assignmentId: currentAssignment.id_asignacion,
+      };
+
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/notifications/homework-reminder`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert(res.data.msg); // Muestra el mensaje de éxito/resumen del backend
+    } catch (err) {
+      console.error("Error al enviar recordatorios:", err);
+      alert("Error al enviar las notificaciones. " + (err.response?.data?.msg || err.message));
+    } finally {
+      // Restablecer el estado de los botones
+      setIsSendingAll(false);
+      setSendingCui(null);
+    }
   };
 
   const fetchData = useCallback(async () => {
@@ -150,7 +186,6 @@ export default function TeacherDashboard() {
       const API_URL = process.env.REACT_APP_API_URL;
       const res = await axios.get(`${API_URL}/api/teachers/assignment-data/${currentAssignment.id_asignacion}`, { headers: { Authorization: `Bearer ${token}` } });
       
-      // ✅ CORRECCIÓN: Aseguramos que los cursos se carguen en el estado correcto
       setCurrentCourses(res.data.courses || []);
       setStudents(res.data.students);
       setTasks(res.data.tasks);
@@ -232,9 +267,6 @@ export default function TeacherDashboard() {
     }, {});
   }, [tasks]);
 
-  
-  const backPath = isCoordinatorView ? '/seleccionar-docente' : '/panel';
-
   return (
     <div className="tdb-page">
       <div className="tdb-container">
@@ -248,7 +280,6 @@ export default function TeacherDashboard() {
             />
         )}
         
-        {/* ✅ CORRECCIÓN: Se eliminó el botón "Volver" de aquí */}
         <header className="tdb-header">
           <h1>Panel de Docente: {teacherInfo?.nombre_completo || 'Cargando...'}</h1>
           <p>Seguimiento y control de tareas</p>
