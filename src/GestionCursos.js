@@ -67,51 +67,53 @@ export default function GestionCursos() {
     const cancelEdit = () => setEditingCurso(null);
 
     return (
-        <div className="gc-page">
-            <div className="gc-container">
-                <header className="gc-header">
-                    <h1>Gestión de Cursos</h1>
-                    <button className="gc-back-btn" onClick={() => navigate('/coordinator/dashboard')}>Volver</button>
-                </header>
+        <div className="pagina-centrada">
+            <div className="gc-page">
+                <div className="gc-container">
+                    <header className="gc-header">
+                        <h1>Gestión de Cursos</h1>
+                        <button className="gc-back-btn" onClick={() => navigate('/coordinator/dashboard')}>Volver</button>
+                    </header>
 
-                <div className="gc-content">
-                    <div className="gc-form-card">
-                        <h3>{editingCurso ? 'Editando Curso' : 'Agregar Nuevo Curso'}</h3>
-                        <form onSubmit={handleSubmit}>
-                            <input
-                                type="text"
-                                name="nombre_curso"
-                                value={editingCurso ? editingCurso.nombre_curso : form.nombre_curso}
-                                onChange={handleChange}
-                                placeholder="Nombre del curso"
-                                required
-                            />
-                            <select
-                                name="id_grado"
-                                value={editingCurso ? editingCurso.id_grado : form.id_grado}
-                                onChange={handleChange}
-                                required
-                            >
-                                <option value="">Asignar a un grado</option>
-                                {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
-                            </select>
-                            <div className="gc-actions">
-                                {editingCurso && <button type="button" onClick={cancelEdit}>Cancelar</button>}
-                                <button type="submit">{editingCurso ? 'Guardar Cambios' : 'Agregar Curso'}</button>
-                            </div>
-                        </form>
-                    </div>
+                    <div className="gc-content">
+                        <div className="gc-form-card">
+                            <h3>{editingCurso ? 'Editando Curso' : 'Agregar Nuevo Curso'}</h3>
+                            <form onSubmit={handleSubmit}>
+                                <input
+                                    type="text"
+                                    name="nombre_curso"
+                                    value={editingCurso ? editingCurso.nombre_curso : form.nombre_curso}
+                                    onChange={handleChange}
+                                    placeholder="Nombre del curso"
+                                    required
+                                />
+                                <select
+                                    name="id_grado"
+                                    value={editingCurso ? editingCurso.id_grado : form.id_grado}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">Asignar a un grado</option>
+                                    {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
+                                </select>
+                                <div className="gc-actions">
+                                    {editingCurso && <button type="button" onClick={cancelEdit}>Cancelar</button>}
+                                    <button type="submit">{editingCurso ? 'Guardar Cambios' : 'Agregar Curso'}</button>
+                                </div>
+                            </form>
+                        </div>
 
-                    <div className="gc-list-card">
-                        <h3>Listado de Cursos</h3>
-                        <ul className="gc-list">
-                            {cursos.map(c => (
-                                <li key={c.id_curso}>
-                                    <span>{c.nombre_curso} ({c.nombre_grado})</span>
-                                    <button onClick={() => handleEdit(c)}>✏️ Editar</button>
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="gc-list-card">
+                            <h3>Listado de Cursos</h3>
+                            <ul className="gc-list">
+                                {cursos.map(c => (
+                                    <li key={c.id_curso}>
+                                        <span>{c.nombre_curso} ({c.nombre_grado})</span>
+                                        <button onClick={() => handleEdit(c)}>✏️ Editar</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

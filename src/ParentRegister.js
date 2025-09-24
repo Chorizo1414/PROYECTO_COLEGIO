@@ -50,68 +50,72 @@ export default function ParentRegister() {
   const goBack = () => navigate(-1);
 
   return (
-    <div className="prg-page-bg">
-      <div className="prg-card">
-        <header className="prg-header">
-          <h1>Registro de Encargado</h1>
-          <p>Añada los datos del padre o encargado principal.</p>
-        </header>
+    <div className="contenedor-formulario">
+        <div className="formulario-card">
+          <div className="prg-page-bg">
+            <div className="prg-card">
+              <header className="prg-header">
+                <h1>Registro de Encargado</h1>
+                <p>Añada los datos del padre o encargado principal.</p>
+              </header>
 
-        <form className="prg-form" onSubmit={onSubmit}>
-          <label className="prg-label">CUI del Padre/Encargado
-            <input
-              className="prg-input"
-              name="parentCui"
-              value={form.parentCui}
-              onChange={onChange}
-              placeholder="0000 00000 0000"
-              required
-            />
-          </label>
+              <form className="prg-form" onSubmit={onSubmit}>
+                <label className="prg-label">CUI del Padre/Encargado
+                  <input
+                    className="prg-input"
+                    name="parentCui"
+                    value={form.parentCui}
+                    onChange={onChange}
+                    placeholder="0000 00000 0000"
+                    required
+                  />
+                </label>
 
-          <label className="prg-label">Nombres y Apellidos del Padre
-            <input
-              className="prg-input"
-              name="parentName"
-              value={form.parentName}
-              onChange={onChange}
-              placeholder="Nombre completo"
-              required
-            />
-          </label>
+                <label className="prg-label">Nombres y Apellidos del Padre
+                  <input
+                    className="prg-input"
+                    name="parentName"
+                    value={form.parentName}
+                    onChange={onChange}
+                    placeholder="Nombre completo"
+                    required
+                  />
+                </label>
 
-          <label className="prg-label">Teléfono
-            <input
-              className="prg-input"
-              name="phone"
-              value={form.phone}
-              onChange={onChange}
-              placeholder="(502) 0000-0000"
-              required
-            />
-          </label>
+                <label className="prg-label">Teléfono
+                  <input
+                    className="prg-input"
+                    name="phone"
+                    value={form.phone}
+                    onChange={onChange}
+                    placeholder="(502) 0000-0000"
+                    required
+                  />
+                </label>
 
-          <label className="prg-label">Dirección
-            <textarea
-              className="prg-input prg-textarea"
-              name="address"
-              rows="3"
-              value={form.address}
-              onChange={onChange}
-              placeholder="Calle, avenida, zona, municipio…"
-            />
-          </label>
+                <label className="prg-label">Dirección
+                  <textarea
+                    className="prg-input prg-textarea"
+                    name="address"
+                    rows="3"
+                    value={form.address}
+                    onChange={onChange}
+                    placeholder="Calle, avenida, zona, municipio…"
+                  />
+                </label>
 
-          <div className="prg-actions">
-            <button type="button" className="prg-btn prg-btn--ghost" onClick={goBack}>
-              ATRAS
-            </button>
-            <button type="submit" className="prg-btn prg-btn--primary">
-              GUARDAR
-            </button>
+                <div className="prg-actions">
+                  <button type="button" className="prg-btn prg-btn--ghost" onClick={goBack}>
+                    ATRAS
+                  </button>
+                  <button type="submit" className="prg-btn prg-btn--primary">
+                    GUARDAR
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </form>
+          </div>
       </div>
-    </div>
   );
 }

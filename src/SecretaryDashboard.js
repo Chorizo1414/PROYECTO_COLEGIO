@@ -25,26 +25,28 @@ export default function SecretaryDashboard() {
     };
 
     return (
-        <div className="sdb-page">
-            <div className="sdb-container">
-                <header className="sdb-header">
-                    <h1>Panel de Secretaría</h1>
-                    <p>Gestión de alumnos y control financiero</p>
-                </header>
+        <div className="sdb-page pagina-centrada">
+            <div className="sdb-page">
+                <div className="sdb-container">
+                    <header className="sdb-header">
+                        <h1>Panel de Secretaría</h1>
+                        <p>Gestión de alumnos y control financiero</p>
+                    </header>
 
-                <main className="sdb-grid">
-                    {menuOptions.map(opt => (
-                        <div key={opt.key} className="sdb-card" onClick={() => handleNavigation(opt.path)}>
-                            <div className="sdb-icon">{opt.icon}</div>
-                            <h3 className="sdb-title">{opt.title}</h3>
-                            <p className="sdb-desc">{opt.desc}</p>
-                        </div>
-                    ))}
-                </main>
+                    <main className="sdb-grid">
+                        {menuOptions.map(opt => (
+                            <div key={opt.key} className="sdb-card" onClick={() => handleNavigation(opt.path)}>
+                                <div className="sdb-icon">{opt.icon}</div>
+                                <h3 className="sdb-title">{opt.title}</h3>
+                                <p className="sdb-desc">{opt.desc}</p>
+                            </div>
+                        ))}
+                    </main>
 
-                 <section className="sdb-actions">
-                    <button className="sdb-btn-logout" onClick={logout}>🚪 Cerrar Sesión</button>
-                </section>
+                    <section className="sdb-actions">
+                        <button className="sdb-btn-logout" onClick={logout}>🚪 Cerrar Sesión</button>
+                    </section>
+                </div>
             </div>
         </div>
     );

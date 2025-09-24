@@ -17,25 +17,27 @@ const MessageEditorModal = ({ student, onClose, onSend }) => {
     };
 
     return (
-        <div className="sp-modalMask">
-            <div className="sp-modal">
-                <div className="sp-modalHead">
-                    <h3>Editar Mensaje para <span>{student.nombre_completo}</span></h3>
-                    <button onClick={onClose} className="sp-close">✕</button>
-                </div>
-                <textarea 
-                    value={message} 
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows="5"
-                    className="sp-textarea"
-                />
-                <div className="sp-modalFoot">
-                    <button onClick={onClose} className="sp-btn sp-btn--ghost">Cancelar</button>
-                    <button onClick={handleSend} disabled={isSending} className="sp-btn sp-btn--primary">
-                        {isSending ? "Enviando..." : "Enviar Recordatorio"}
-                    </button>
-                </div>
-            </div>
+      <div className="pagina-centrada">
+          <div className="sp-modalMask">
+              <div className="sp-modal">
+                  <div className="sp-modalHead">
+                      <h3>Editar Mensaje para <span>{student.nombre_completo}</span></h3>
+                      <button onClick={onClose} className="sp-close">✕</button>
+                  </div>
+                  <textarea 
+                      value={message} 
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows="5"
+                      className="sp-textarea"
+                  />
+                  <div className="sp-modalFoot">
+                      <button onClick={onClose} className="sp-btn sp-btn--ghost">Cancelar</button>
+                      <button onClick={handleSend} disabled={isSending} className="sp-btn sp-btn--primary">
+                          {isSending ? "Enviando..." : "Enviar Recordatorio"}
+                      </button>
+                  </div>
+              </div>
+          </div>
         </div>
     );
 };

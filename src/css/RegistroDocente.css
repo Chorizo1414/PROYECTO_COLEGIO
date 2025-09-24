@@ -42,3 +42,16 @@
   .treg-header{ padding:22px; }
   .treg-form{ padding:18px 16px 6px; }
 }
+
+.contenedor-formulario {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+  background-color: #f1f5f9; /* O el color de fondo que prefieras */
+}
+
+.formulario-card {
+  width: 100%;
+  max-width: 800px; /* Ancho máximo para el formulario */
+}
