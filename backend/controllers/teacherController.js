@@ -185,19 +185,25 @@ const getAssignmentData = async (req, res) => {
 
 // --- CREAR TAREA (Función existente) ---
 const createTask = async (req, res) => {
-    // Recibimos también el id_curso
     const { id_asignacion, id_curso, titulo, fecha_entrega } = req.body;
     try {
         const query = `
-          INSERT INTO tareas (id_asignacion, id_curso, titulo, fecha_entrega) 
-          VALUES ($1, $2, $3, $4) RETURNING *`;
+          WITH new_task AS (
+            INSERT INTO tareas (id_asignacion, id_curso, titulo, fecha_entrega) 
+            VALUES ($1, $2, $3, $4) 
+            RETURNING *
+          )
+          SELECT nt.*, c.nombre_curso
+          FROM new_task nt
+          JOIN cursos c ON nt.id_curso = c.id_curso;
+        `;
         const result = await pool.query(query, [id_asignacion, id_curso, titulo, fecha_entrega]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error("Error al crear la tarea:", err.message);
         res.status(500).send("Error en el servidor");
     }
-}
+};
 
 // --- GUARDAR ENTREGAS (Función existente) ---
 const saveDeliveries = async (req, res) => {
@@ -301,10 +307,16 @@ const updateTask = async (req, res) => {
     const { titulo, fecha_entrega, id_curso } = req.body;
     try {
         const query = `
-            UPDATE tareas 
-            SET titulo = $1, fecha_entrega = $2, id_curso = $3 
-            WHERE id_tarea = $4 
-            RETURNING *`;
+            WITH updated_task AS (
+              UPDATE tareas 
+              SET titulo = $1, fecha_entrega = $2, id_curso = $3 
+              WHERE id_tarea = $4 
+              RETURNING *
+            )
+            SELECT ut.*, c.nombre_curso
+            FROM updated_task ut
+            JOIN cursos c ON ut.id_curso = c.id_curso;
+        `;
         const result = await pool.query(query, [titulo, fecha_entrega, id_curso, taskId]);
         if (result.rows.length === 0) {
             return res.status(404).json({ msg: 'Tarea no encontrada.' });
