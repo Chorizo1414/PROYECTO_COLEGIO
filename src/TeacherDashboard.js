@@ -201,12 +201,24 @@ export default function TeacherDashboard() {
 
   return (
     <div className="tdb-page">
-      {isModalOpen && <TaskModal assignmentId={selectedAssignmentId} courses={data.cursos} taskToEdit={taskToEdit} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); }} onSave={() => { setIsModalOpen(false); setTaskToEdit(null); fetchData(selectedAssignmentId); }} />}
-      <div className="tdb-container">
-        <header className="tdb-header">
-          <h1>Panel del Docente</h1>
-          <button className="tdb-back-btn" onClick={() => navigate(backPath)}>Volver</button>
-        </header>
+      {isModalOpen && (
+        <TaskModal 
+            assignmentId={selectedAssignmentId} 
+            courses={data.cursos} 
+            taskToEdit={taskToEdit} 
+            onClose={() => { setIsModalOpen(false); setTaskToEdit(null); }} 
+            onSave={() => { 
+                setIsModalOpen(false); 
+                setTaskToEdit(null); 
+                fetchData(selectedAssignmentId); 
+            }} 
+        />
+      )}
+        <div className="tdb-container">
+            <header className="tdb-header">
+                <h1>Panel del Docente</h1>
+                <button className="tdb-back-btn" onClick={() => navigate(backPath)}>Volver</button>
+            </header>
         
         {!isCoordinatorView && (
           <div className="tdb-assignment-selector">

@@ -147,53 +147,109 @@ const AsignarCursos = () => {
   if (loading) return <div>Cargando...</div>;
 
   return (
-    <div className="ac-page pagina-centrada">
-      <div className="ac-page">
+    <div className="ac-page">
         <div className="ac-container">
-          <header className="ac-header">
-            <h1>Asignación de Cursos a Docentes</h1>
-            <button className="ac-btn-back" onClick={() => navigate('/coordinator/dashboard')}>Volver al Panel</button>
-          </header>
-
-          <div className="ac-content-grid">
-            <div className="ac-card ac-form-card">
+            <header className="ac-header">
+              <h1>Asignar Cursos a Docentes</h1>
+            </header>
+            <div className="back-row">
+              <button type="button" className="btn-volver" onClick={() => navigate('/coordinator/dashboard')}>
+                Volver al Panel
+              </button>
+            </div>
+          <div className="ac-grid">
+            <div className="ac-card">
               <h2>{editingId ? 'Editando Asignación' : 'Nueva Asignación'}</h2>
+              
               <form onSubmit={handleSubmit}>
-                <label>Docente</label>
-                <select name="cui_docente" value={form.cui_docente} onChange={handleChange} required>
-                  <option value="">Seleccione un docente</option>
-                  {docentes.map(d => <option key={d.cui_docente} value={d.cui_docente}>{d.nombre_completo}</option>)}
-                </select>
-                <label>Grado</label>
-                <select name="id_grado" value={form.id_grado} onChange={handleChange} required>
-                  <option value="">Seleccione un grado</option>
-                  {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
-                </select>
-                <label>Sección</label>
-                <select name="id_seccion" value={form.id_seccion} onChange={handleChange} required disabled={!form.id_grado}>
-                  <option value="">Seleccione una sección</option>
-                  {secciones.map(s => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>)}
-                </select>
-                <fieldset>
-                  <legend>Cursos a impartir</legend>
-                  <div className="ac-cursos-checkboxes">
-                    {cursos.map(c => (
-                      <label key={c.id_curso}>
-                        <input type="checkbox" checked={form.cursos_ids.includes(c.id_curso)} onChange={() => handleCursoChange(c.id_curso)} />
-                        {c.nombre_curso}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <label>Año</label>
-                <input type="number" name="anio" value={form.anio} onChange={handleChange} required />
-                <div className="ac-form-actions">
-                    {editingId && (
-                        <button type="button" className="ac-btn ac-btn--secondary" onClick={handleCancelEdit}>Cancelar Edición</button>
-                    )}
-                    <button type="submit" className="ac-btn ac-btn--primary">{editingId ? 'Guardar Cambios' : 'Asignar Cursos'}</button>
+              <label>Docente</label>
+              <select
+                name="cui_docente"
+                value={form.cui_docente}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Seleccione un docente</option>
+                {docentes.map(d => (
+                  <option key={d.cui_docente} value={d.cui_docente}>
+                    {d.nombre_completo}
+                  </option>
+                ))}
+              </select>
+
+              <label>Grado</label>
+              <select
+                name="id_grado"
+                value={form.id_grado}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Seleccione un grado</option>
+                {grados.map(g => (
+                  <option key={g.id_grado} value={g.id_grado}>
+                    {g.nombre_grado}
+                  </option>
+                ))}
+              </select>
+
+              <label>Sección</label>
+              <select
+                name="id_seccion"
+                value={form.id_seccion}
+                onChange={handleChange}
+                required
+                disabled={!form.id_grado}
+              >
+                <option value="">Seleccione una sección</option>
+                {secciones.map(s => (
+                  <option key={s.id_seccion} value={s.id_seccion}>
+                    {s.nombre_seccion}
+                  </option>
+                ))}
+              </select>
+
+              <fieldset>
+                <legend>Cursos a impartir</legend>
+                <div className="ac-cursos-checkboxes">
+                  {cursos.map(c => (
+                    <label key={c.id_curso}>
+                      <input
+                        type="checkbox"
+                        checked={form.cursos_ids.includes(c.id_curso)}
+                        onChange={() => handleCursoChange(c.id_curso)}
+                      />
+                      {c.nombre_curso}
+                    </label>
+                  ))}
                 </div>
-              </form>
+              </fieldset>
+
+              <label>Año</label>
+              <input
+                type="number"
+                name="anio"
+                value={form.anio}
+                onChange={handleChange}
+                required
+              />
+
+              <div className="ac-form-actions">
+                {editingId && (
+                  <button
+                    type="button"
+                    className="ac-btn ac-btn--secondary"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancelar Edición
+                  </button>
+                )}
+                <button type="submit" className="ac-btn ac-btn--primary">
+                  {editingId ? 'Guardar Cambios' : 'Asignar Cursos'}
+                </button>
+              </div>
+            </form>
+
+              
             </div>
             <div className="ac-card">
               <h2>Asignaciones Actuales</h2>
@@ -215,7 +271,6 @@ const AsignarCursos = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

@@ -17,7 +17,6 @@ const MessageEditorModal = ({ student, onClose, onSend }) => {
     };
 
     return (
-      <div className="pagina-centrada">
           <div className="sp-modalMask">
               <div className="sp-modal">
                   <div className="sp-modalHead">
@@ -38,7 +37,6 @@ const MessageEditorModal = ({ student, onClose, onSend }) => {
                   </div>
               </div>
           </div>
-        </div>
     );
 };
 

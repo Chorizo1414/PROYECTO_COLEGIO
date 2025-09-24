@@ -39,46 +39,78 @@ export default function GestionCursos() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('accessToken');
-        const data = editingCurso ? { nombre_curso: editingCurso.nombre_curso, id_grado: editingCurso.id_grado } : form;
+  e.preventDefault();
+  const token = localStorage.getItem('accessToken');
+  const API = process.env.REACT_APP_API_URL;
 
-        try {
-            if (editingCurso) {
-                await axios.put(`${process.env.REACT_APP_API_URL}/api/cursos/${editingCurso.id_curso}`, data, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                alert('Curso actualizado.');
-            } else {
-                await axios.post(`${process.env.REACT_APP_API_URL}/api/cursos`, data, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                alert('Curso creado.');
-            }
-            fetchData();
-            setForm({ nombre_curso: '', id_grado: '' });
-            setEditingCurso(null);
-        } catch (error) {
-            alert('Error al guardar el curso.');
-        }
-    };
+  // toma el origen de datos (editando o creando)
+  const raw = editingCurso ? editingCurso : form;
+
+  // <-- ESTE ES EL PAYLOAD QUE NO LOGRABAS PEGAR -->
+  const payload = {
+    nombre_curso: (raw.nombre_curso || '').trim(),
+    // tu tabla exige NOT NULL; si no usás descripción, manda cadena vacía
+    descripcion_curso: (raw.descripcion_curso || '').trim(),
+    id_grado:
+      raw.id_grado === '' || raw.id_grado === null || typeof raw.id_grado === 'undefined'
+        ? null
+        : Number(raw.id_grado)
+  };
+
+  try {
+    if (editingCurso) {
+      await axios.put(`${API}/api/cursos/${editingCurso.id_curso}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Curso actualizado.');
+    } else {
+      await axios.post(`${API}/api/cursos`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Curso creado.');
+    }
+    await fetchData();
+    setForm({ nombre_curso: '', id_grado: '' });
+    setEditingCurso(null);
+  } catch (error) {
+    alert('Error al guardar el curso.');
+    console.error(error);
+  }
+};
+
+   const handleDelete = async (id) => {
+  if (!window.confirm('¿Eliminar este curso?')) return;
+  const token = localStorage.getItem('accessToken');
+  const API = process.env.REACT_APP_API_URL;
+  try {
+    await axios.delete(`${API}/api/cursos/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setCursos(prev => prev.filter(c => c.id_curso !== id));
+  } catch (e) {
+    alert('No se pudo eliminar el curso. Verifica si está asignado o tiene tareas.');
+    console.error(e);
+  }
+};
 
     const handleEdit = (curso) => setEditingCurso(curso);
     const cancelEdit = () => setEditingCurso(null);
 
     return (
-        <div className="pagina-centrada">
-            <div className="gc-page">
-                <div className="gc-container">
-                    <header className="gc-header">
-                        <h1>Gestión de Cursos</h1>
-                        <button className="gc-back-btn" onClick={() => navigate('/coordinator/dashboard')}>Volver</button>
-                    </header>
-
-                    <div className="gc-content">
-                        <div className="gc-form-card">
-                            <h3>{editingCurso ? 'Editando Curso' : 'Agregar Nuevo Curso'}</h3>
-                            <form onSubmit={handleSubmit}>
+    <div className="gc-page">
+        <div className="gc-container">
+            <header className="gc-header">
+              <h1>Gestión de Cursos</h1>
+            </header>
+            <div className="back-row">
+              <button type="button" className="btn-volver" onClick={() => navigate('/coordinator/dashboard')}>
+                Volver al Panel
+              </button>
+            </div>
+                    <div className="gc-grid">
+                        <div className="gc-card">
+                            <h2>{editingCurso ? 'Editando Curso' : 'Agregar Nuevo Curso'}</h2>
+                            <form className="gc-form" onSubmit={handleSubmit}>
                                 <input
                                     type="text"
                                     name="nombre_curso"
@@ -91,32 +123,45 @@ export default function GestionCursos() {
                                     name="id_grado"
                                     value={editingCurso ? editingCurso.id_grado : form.id_grado}
                                     onChange={handleChange}
-                                    required
                                 >
-                                    <option value="">Asignar a un grado</option>
+                                    
+                                    <option value="">Curso general (sin grado)</option>
                                     {grados.map(g => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>)}
                                 </select>
-                                <div className="gc-actions">
-                                    {editingCurso && <button type="button" onClick={cancelEdit}>Cancelar</button>}
-                                    <button type="submit">{editingCurso ? 'Guardar Cambios' : 'Agregar Curso'}</button>
+                                <div className="gc-form-actions">
+                                  {editingCurso && (
+                                    <button
+                                      type="button"
+                                      className="gc-btn gc-btn--secondary"
+                                      onClick={cancelEdit}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  )}
+                                  <button type="submit" className="gc-btn gc-btn--primary">
+                                    {editingCurso ? 'Guardar Cambios' : 'Agregar Curso'}
+                                  </button>
                                 </div>
                             </form>
                         </div>
 
-                        <div className="gc-list-card">
+                        <div className="gc-card">
                             <h3>Listado de Cursos</h3>
-                            <ul className="gc-list">
-                                {cursos.map(c => (
-                                    <li key={c.id_curso}>
-                                        <span>{c.nombre_curso} ({c.nombre_grado})</span>
-                                        <button onClick={() => handleEdit(c)}>✏️ Editar</button>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="gc-list">
+                      {cursos.map(c => (
+                        <div key={c.id_curso} className="gc-list-item">
+                          <div>
+                            <span className="gc-curso-nombre">{c.nombre_curso}</span>
+                            <span className="gc-grado">{c.nombre_grado ?? 'General'}</span>
+                          </div>
+                          <button className="gc-btn gc-btn--primary" onClick={() => handleEdit(c)}>✏️ Editar</button>
+                          <button className="gc-btn gc-btn--danger" onClick={() => handleDelete(c.id_curso)}>🗑️ Borrar</button>
+                        </div>
+                      ))}
+                    </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
     );
 }

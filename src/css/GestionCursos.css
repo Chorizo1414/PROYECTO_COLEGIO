@@ -56,3 +56,91 @@
   .gc-grid { grid-template-columns: 1fr; }
   .gc-list { max-height: none; }
 }
+
+/* Alineación de botones como en AsignarCursos */
+.gc-form-actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.gc-form-actions .gc-btn{
+  flex-grow: 1;
+}
+
+/* Botón secundario (gris) para Cancelar */
+.gc-btn--secondary{
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.gc-actions{ display:flex; gap:8px; }
+.gc-btn--danger{ background:#ef4444; color:#fff; }
+.gc-btn--danger:hover{ filter:brightness(.95); }
+
+.btn-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-volver:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.btn-volver:before {
+  content: "←";
+  font-size: 16px;
+}
+
+.page-header {
+  position: relative;
+  background: linear-gradient(90deg, #0d47a1, #1565c0, #2e7d32); /* cambia colores según sección */
+  color: #fff;
+  padding: 30px 20px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #f3f4f6;
+}
+
+.page-header .btn-volver {
+  position: absolute;
+  bottom: -20px;
+  left: 20px;
+}
+
+.btn-volver{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 14px; border:1px solid #d1d5db; border-radius:8px;
+  background:#fff; color:#1f2937; font-weight:600; font-size:14px;
+  cursor:pointer; transition:background .2s,color .2s;
+}
+.btn-volver:hover{ background:#f3f4f6; color:#111827; }
+
+
+.back-row{ margin: 10px 0 12px; }
+
+
+.gc-header{ position: static; }
+
+
