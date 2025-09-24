@@ -55,3 +55,40 @@
   width: 100%;
   max-width: 800px; /* Ancho máximo para el formulario */
 }
+
+.treg-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.treg-password-wrapper .treg-input {
+  padding-right: 45px; /* Deja espacio para el ícono */
+}
+
+.treg-password-toggle {
+  position: absolute;
+  right: 15px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #9ca3af;
+}
+
+.treg-footer {
+  padding: 16px 24px;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.treg-cancel-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.treg-cancel-btn:hover {
+  text-decoration: underline;
+}

@@ -1,126 +1,110 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import "./css/RegistroDocente.css";
+import './css/RegistroDocente.css';
 
-
-export default function RegistroDocente() {
-  const [form, setForm] = useState({
-    cui_docente: "",
-    nombre_completo: "",
-    grado_guia: "",
-    email: "",
-    telefono: "",
-    estado_id: "1",
-    username: "",
-    password: "",
-  });
-  const [grados, setGrados] = useState([]);
+const RegistroDocente = () => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchGrades = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/grades`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        setGrados(res.data);
-      } catch (error) {
-        console.error("Error al cargar los grados", error);
-        alert("No se pudieron cargar los grados desde el servidor.");
-      }
-    };
-    fetchGrades();
-  }, []);
-
-  const onChange = (e) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  
+  const initialFormState = {
+    cui_docente: '',
+    nombre_completo: '',
+    email: '',
+    telefono: '',
+    username: '',
+    password: '',
+    estado_id: 1,
   };
 
-  const onSubmit = async (e) => {
+  const [form, setForm] = useState(initialFormState);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const API_URL = process.env.REACT_APP_API_URL;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prevForm => ({
+      ...prevForm,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-      alert("Sesión no válida.");
-      return navigate('/login');
-    }
-
+    
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/teachers`, form, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      await axios.post(`${API_URL}/api/teachers/register`, form, { 
+        headers: { Authorization: `Bearer ${token}` } 
       });
-
-      alert('¡Docente registrado con éxito!');
-      navigate('/docentes');
+      alert('Docente registrado con éxito.');
+      setForm(initialFormState);
+      // ✅ CORRECCIÓN 1: Se usa la ruta correcta
+      navigate('/docentes'); 
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Hubo un error al registrar al docente.";
-      alert(errorMsg);
       console.error("Error al registrar docente:", error);
+      alert('Error al registrar el docente: ' + (error.response?.data?.msg || 'Error desconocido.'));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="contenedor-formulario">
-        <div className="formulario-card">
-            
-            <div className="treg-card">
-                <header className="treg-header">
-                    <h1>Registro de Nuevo Docente</h1>
-                </header>
-                <form className="treg-form" onSubmit={onSubmit}>
-                    <label className="treg-label" htmlFor="cui_docente">CUI</label>
-                    <input id="cui_docente" name="cui_docente" className="treg-input" value={form.cui_docente} onChange={onChange} placeholder="CUI del docente" required maxLength={13} />
-
-                    <label className="treg-label" htmlFor="nombre_completo">Nombre Completo</label>
-                    <input id="nombre_completo" name="nombre_completo" className="treg-input" value={form.nombre_completo} onChange={onChange} placeholder="Nombre y Apellido" required maxLength={100} />
-
-                    <label className="treg-label" htmlFor="username">Nombre de Usuario</label>
-                    <input id="username" name="username" className="treg-input" value={form.username} onChange={onChange} required maxLength={50} />
-
-                    <label className="treg-label" htmlFor="password">Contraseña</label>
-                    <input id="password" name="password" type="password" className="treg-input" value={form.password} onChange={onChange} required maxLength={255} />
-                    
-                    <label className="treg-label" htmlFor="grado_guia">Grado Guía (opcional)</label>
-                    <select id="grado_guia" name="grado_guia" className="treg-input" value={form.grado_guia} onChange={onChange}>
-                        <option value="">Ninguno</option>
-                        {grados.map(grado => (
-                            <option key={grado.id_grado} value={grado.id_grado}>{grado.descripcion}</option>
-                        ))}
-                    </select>
-
-                    <label className="treg-label" htmlFor="email">Correo (opcional)</label>
-                    <input id="email" name="email" type="email" className="treg-input" value={form.email} onChange={onChange} placeholder="docente@escuela.edu.gt" maxLength={50} />
-
-                    <label className="treg-label" htmlFor="telefono">Teléfono (opcional)</label>
-                    <input id="telefono" name="telefono" className="treg-input" value={form.telefono} onChange={onChange} placeholder="1234-5678" maxLength={20} />
-
-                    <fieldset className="treg-fieldset">
-                        <legend className="treg-legend">Estado del Docente</legend>
-                        <div className="treg-radio-row">
-                            <label className="treg-radio">
-                                <input type="radio" name="estado_id" value="1" checked={form.estado_id === "1"} onChange={onChange} required />
-                                <span>Activo</span>
-                            </label>
-                            <label className="treg-radio">
-                                <input type="radio" name="estado_id" value="2" checked={form.estado_id === "2"} onChange={onChange} />
-                                <span>Inactivo</span>
-                            </label>
-                        </div>
-                    </fieldset>
-
-                    <div className="treg-actions">
-                        <button className="treg-save" type="submit">Guardar Docente</button>
-                    </div>
-                </form>
-                <footer className="treg-footer">
-                    <Link to="/docentes" className="treg-back">Volver a la gestión</Link>
-                </footer>
-            </div>
-
+    <div className="treg-container">
+      <div className="treg-card">
+        <div className="treg-header">
+          <h1>Registro de Nuevo Docente</h1>
         </div>
+        <form onSubmit={handleSubmit} className="treg-form">
+          <label className="treg-label">Nombre Completo</label>
+          <input className="treg-input" type="text" name="nombre_completo" value={form.nombre_completo} onChange={handleChange} required />
+
+          <label className="treg-label">CUI del Docente</label>
+          <input className="treg-input" type="text" name="cui_docente" value={form.cui_docente} onChange={handleChange} required />
+          
+          <label className="treg-label">Email (Opcional)</label>
+          <input className="treg-input" type="email" name="email" value={form.email} onChange={handleChange} />
+          
+          <label className="treg-label">Teléfono (Opcional)</label>
+          <input className="treg-input" type="tel" name="telefono" value={form.telefono} onChange={handleChange} />
+          
+          <label className="treg-label">Nombre de Usuario</label>
+          <input className="treg-input" type="text" name="username" value={form.username} onChange={handleChange} required />
+          
+          <label className="treg-label">Contraseña</label>
+          <div className="treg-password-wrapper">
+            <input 
+              className="treg-input" 
+              type={showPassword ? "text" : "password"} 
+              name="password" 
+              value={form.password} 
+              onChange={handleChange} 
+              required 
+            />
+            <span 
+              className="treg-password-toggle" 
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? '👁️' : '🔒'}
+            </span>
+          </div>
+
+          <div className="treg-actions">
+            <button type="submit" className="treg-save" disabled={loading}>
+              {loading ? 'Registrando...' : 'Guardar Docente'}
+            </button>
+          </div>
+        </form>
+        <div className="treg-footer">
+          {/* ✅ CORRECCIÓN 2: Se usa la ruta correcta */}
+          <button onClick={() => navigate('/docentes')} className="treg-cancel-btn">
+            Cancelar y Volver
+          </button>
+        </div>
+      </div>
     </div>
-);
-}
+  );
+};
+
+export default RegistroDocente;

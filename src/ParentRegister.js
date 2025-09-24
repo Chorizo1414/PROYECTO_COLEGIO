@@ -88,7 +88,7 @@ export default function ParentRegister() {
                     name="phone"
                     value={form.phone}
                     onChange={onChange}
-                    placeholder="(502) 0000-0000"
+                    placeholder="5020000-0000"
                     required
                   />
                 </label>

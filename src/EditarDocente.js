@@ -10,7 +10,7 @@ export default function EditarDocente() {
         nombre_completo: "",
         email: "",
         telefono: "",
-        estado_id: "1",
+        estado_id: "1", // El estado se maneja como string
     });
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -22,8 +22,8 @@ export default function EditarDocente() {
                 const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${cui}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
-                setForm(res.data);
+                // Aseguramos que el estado_id que viene de la BD se trate como string
+                setForm({ ...res.data, estado_id: String(res.data.estado_id) });
             } catch (error) {
                 alert('Error al cargar los datos del docente.');
                 console.error("Error fetching teacher data:", error);
@@ -71,10 +71,18 @@ export default function EditarDocente() {
                     <input id="telefono" name="telefono" className="tedit-input" value={form.telefono || ''} onChange={onChange} />
 
                     <fieldset className="tedit-fieldset">
-                        <legend>Estado</legend>
+                        <legend className="tedit-legend">Estado del Docente</legend>
                         <div className="tedit-radio-row">
-                            <label><input type="radio" name="estado_id" value="1" checked={form.estado_id === 1} onChange={onChange} /> Activo</label>
-                            <label><input type="radio" name="estado_id" value="2" checked={form.estado_id === 2} onChange={onChange} /> Inactivo</label>
+                            <label className="tedit-radio">
+                                {/* ✅ CORRECCIÓN: Se compara con un string "1" en lugar de un número 1 */}
+                                <input type="radio" name="estado_id" value="1" checked={form.estado_id === "1"} onChange={onChange} />
+                                <span>Activo</span>
+                            </label>
+                            <label className="tedit-radio">
+                                {/* ✅ CORRECCIÓN: Se compara con un string "2" en lugar de un número 2 */}
+                                <input type="radio" name="estado_id" value="2" checked={form.estado_id === "2"} onChange={onChange} />
+                                <span>Inactivo</span>
+                            </label>
                         </div>
                     </fieldset>
                     
