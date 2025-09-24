@@ -73,8 +73,8 @@ export default function EditarDocente() {
                     <fieldset className="tedit-fieldset">
                         <legend>Estado</legend>
                         <div className="tedit-radio-row">
-                            <label><input type="radio" name="estado_id" value="1" checked={form.estado_id == 1} onChange={onChange} /> Activo</label>
-                            <label><input type="radio" name="estado_id" value="2" checked={form.estado_id == 2} onChange={onChange} /> Inactivo</label>
+                            <label><input type="radio" name="estado_id" value="1" checked={form.estado_id === 1} onChange={onChange} /> Activo</label>
+                            <label><input type="radio" name="estado_id" value="2" checked={form.estado_id === 2} onChange={onChange} /> Inactivo</label>
                         </div>
                     </fieldset>
                     
