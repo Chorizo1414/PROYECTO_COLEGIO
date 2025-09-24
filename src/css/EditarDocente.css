@@ -38,3 +38,22 @@
 .tedit-footer{ padding:16px 24px 22px; border-top:1px solid var(--gris-claro); display:flex; justify-content:flex-end; }
 .tedit-back{ color:var(--azul); text-decoration:none; font-weight:600; }
 .tedit-back:hover{ text-decoration:underline; }
+
+.tedit-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tedit-password-wrapper .tedit-input {
+  padding-right: 45px; /* Deja espacio para el ícono */
+}
+
+.tedit-password-toggle {
+  position: absolute;
+  right: 15px;
+  cursor: pointer;
+  font-size: 20px;
+  user-select: none; /* Evita que el ícono se seleccione como texto */
+  color: #9ca3af;
+}

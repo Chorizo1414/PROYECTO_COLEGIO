@@ -10,9 +10,13 @@ export default function EditarDocente() {
         nombre_completo: "",
         email: "",
         telefono: "",
-        estado_id: "1", // El estado se maneja como string
+        estado_id: "1",
+        username: "", // ✅ Se añade 'username' al estado
+        password: "", // ✅ Se añade 'password' al estado
     });
     const [loading, setLoading] = useState(true);
+    // ✅ Se añade estado para la visibilidad de la contraseña
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -22,8 +26,8 @@ export default function EditarDocente() {
                 const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/teachers/${cui}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                // Aseguramos que el estado_id que viene de la BD se trate como string
-                setForm({ ...res.data, estado_id: String(res.data.estado_id) });
+                // El backend ya envía el username, así que se carga automáticamente
+                setForm({ ...res.data, password: "", estado_id: String(res.data.estado_id) });
             } catch (error) {
                 alert('Error al cargar los datos del docente.');
                 console.error("Error fetching teacher data:", error);
@@ -64,6 +68,30 @@ export default function EditarDocente() {
                     <label className="tedit-label" htmlFor="nombre_completo">Nombre Completo</label>
                     <input id="nombre_completo" name="nombre_completo" className="tedit-input" value={form.nombre_completo} onChange={onChange} required />
 
+                    {/* ✅ Se añade el campo de Nombre de Usuario */}
+                    <label className="tedit-label" htmlFor="username">Nombre de Usuario</label>
+                    <input id="username" name="username" className="tedit-input" value={form.username || ''} onChange={onChange} required />
+
+                    {/* ✅ Se añade el campo de Contraseña con el "ojito" */}
+                    <label className="tedit-label" htmlFor="password">Nueva Contraseña (dejar en blanco para no cambiar)</label>
+                    <div className="tedit-password-wrapper">
+                        <input 
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            className="tedit-input"
+                            value={form.password}
+                            onChange={onChange}
+                            placeholder="Ingrese nueva contraseña si desea cambiarla"
+                        />
+                        <span 
+                            className="tedit-password-toggle"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? '👁️' : '🔒'}
+                        </span>
+                    </div>
+
                     <label className="tedit-label" htmlFor="email">Correo</label>
                     <input id="email" name="email" type="email" className="tedit-input" value={form.email || ''} onChange={onChange} />
 
@@ -74,12 +102,10 @@ export default function EditarDocente() {
                         <legend className="tedit-legend">Estado del Docente</legend>
                         <div className="tedit-radio-row">
                             <label className="tedit-radio">
-                                {/* ✅ CORRECCIÓN: Se compara con un string "1" en lugar de un número 1 */}
                                 <input type="radio" name="estado_id" value="1" checked={form.estado_id === "1"} onChange={onChange} />
                                 <span>Activo</span>
                             </label>
                             <label className="tedit-radio">
-                                {/* ✅ CORRECCIÓN: Se compara con un string "2" en lugar de un número 2 */}
                                 <input type="radio" name="estado_id" value="2" checked={form.estado_id === "2"} onChange={onChange} />
                                 <span>Inactivo</span>
                             </label>
