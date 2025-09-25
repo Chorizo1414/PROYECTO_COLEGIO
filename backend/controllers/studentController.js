@@ -302,19 +302,27 @@ const updateFinancialStatus = async (req, res) => {
 // --- OBTENER ESTADO DE MOROSIDAD DE UN ESTUDIANTE ---
 const getStudentDebtStatus = async (cui_estudiante) => {
   try {
+    // --- ESTA ES LA LÓGICA CORREGIDA ---
     const query = `
-      SELECT SUM(cuotas_pendientes) as total_cuotas_pendientes
-      FROM mat_jardin.estado_financiero
-      WHERE cui_estudiante = $1 AND estado = 'PENDIENTE';
+      SELECT COUNT(*) as meses_adeudados
+      FROM generate_series(
+        DATE_TRUNC('year', NOW()),
+        DATE_TRUNC('month', NOW()),
+        '1 month'::interval
+      ) AS months(month)
+      WHERE TO_CHAR(months.month, 'YYYY-MM') NOT IN (
+        SELECT periodo FROM estado_financiero
+        WHERE cui_estudiante = $1 AND estado = 'Solvente'
+      );
     `;
     const { rows } = await pool.query(query, [cui_estudiante]);
-    if (rows.length > 0 && rows[0].total_cuotas_pendientes) {
-      return parseInt(rows[0].total_cuotas_pendientes, 10);
+    if (rows.length > 0 && rows[0].meses_adeudados) {
+      return parseInt(rows[0].meses_adeudados, 10);
     }
     return 0;
   } catch (error) {
     console.error(`Error al verificar la deuda del estudiante ${cui_estudiante}:`, error);
-    return 0;
+    return 0; // Se retorna 0 para no bloquear notificaciones en caso de error
   }
 };
 
